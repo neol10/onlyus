@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
               import('../theme').then(m => {
                 m.applyThemeToDocument(data.settings)
                 // Salva no localStorage para o próximo refresh carregar instantaneamente
-                const storageKey = m.getThemeSettingsKey(user.uid)
+                const storageKey = m.getThemeSettingsKey(u.uid)
                 m.saveThemeSettings(storageKey, data.settings)
               })
             }
