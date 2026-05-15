@@ -4,12 +4,13 @@ import { db } from '../src/firebase/firebaseClient'
 import { useAuth } from '../src/context/AuthContext'
 
 export default function CollabRoom() {
-  const { user, profile } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()
   const [partnerCode, setPartnerCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleLinkPartner = async () => {
+    if (!profile) return
     if (!partnerCode.trim()) {
       setError('Por favor, insira o código do parceiro.')
       return

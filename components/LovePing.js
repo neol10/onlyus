@@ -5,7 +5,7 @@ import { db } from '../src/firebase/firebaseClient'
 import { useAuth } from '../src/context/AuthContext'
 
 export default function LovePing() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [hearts, setHearts] = useState([])
   const [isPinging, setIsPinging] = useState(false)
   const [lastPingRecv, setLastPingRecv] = useState(0)
@@ -26,7 +26,7 @@ export default function LovePing() {
       }
     })
     return () => unsub()
-  }, [user, lastPingRecv])
+  }, [user, profile?.coupleId, lastPingRecv])
 
   const triggerHearts = () => {
     const newHearts = Array.from({ length: 20 }).map((_, i) => ({
