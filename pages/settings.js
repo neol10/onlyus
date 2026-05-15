@@ -555,12 +555,27 @@ export default function SettingsPage() {
                         type="file"
                         accept="image/*"
                         className="field-file"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files[0]
                           if (file) {
-                            const reader = new FileReader()
-                            reader.onload = (ev) => updateSetting('pinPhoto', ev.target.result)
-                            reader.readAsDataURL(file)
+                            try {
+                              const formData = new FormData()
+                              formData.append('file', file)
+                              formData.append('upload_preset', 'etx8raxe')
+                              
+                              const response = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', {
+                                method: 'POST',
+                                body: formData
+                              })
+                              
+                              const data = await response.json()
+                              if (data.secure_url) {
+                                updateSetting('pinPhoto', data.secure_url)
+                              }
+                            } catch (err) {
+                              console.error('Erro no upload do PIN:', err)
+                              alert('Erro ao subir foto do PIN')
+                            }
                           }
                         }}
                       />

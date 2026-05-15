@@ -8,6 +8,7 @@ export default function NewPostForm() {
   const { user, profile } = useAuth()
   const [caption, setCaption] = useState('')
   const [file, setFile] = useState(null)
+  const [progress, setProgress] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [isBlurred, setIsBlurred] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
@@ -23,37 +24,69 @@ export default function NewPostForm() {
     if (!profile?.coupleId) return alert('Você não está em uma sala de casal')
 
     setUploading(true)
-    try {
-      const storageRef = ref(storage, `couples/${profile.coupleId}/${Date.now()}_${file.name}`)
-      const uploadTask = uploadBytesResumable(storageRef, file)
+    setProgress(0)
 
-      uploadTask.on('state_changed', (snapshot) => {
-        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-        setProgress(Math.round(prog))
-      }, (err) => {
-        throw err
-      }, async () => {
-        const url = await getDownloadURL(uploadTask.snapshot.ref)
-        await addDoc(collection(db, 'couples', profile.coupleId, 'posts'), {
-          caption: caption,
-          images: [url],
-          createdAt: Date.now(),
-          authorId: user ? user.uid : null,
-          isBlurred: isBlurred,
-          isLocked: isLocked,
-          notifyPartner: notifyPartner,
-        })
-        setCaption('')
-        setFile(null)
-        setProgress(0)
+    try {
+      // Configurações do Cloudinary
+      const cloudName = 'dftwoo90i'
+      const uploadPreset = 'etx8raxe'
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', uploadPreset)
+
+      // Usando XMLHttpRequest para acompanhar o progresso do upload
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', url, true)
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100)
+          setProgress(percent)
+        }
+      }
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText)
+          const imageUrl = response.secure_url
+
+          // Salva os dados no Firestore (Firebase continua dono da organização)
+          await addDoc(collection(db, 'couples', profile.coupleId, 'posts'), {
+            caption: caption,
+            images: [imageUrl],
+            createdAt: Date.now(),
+            authorId: user ? user.uid : null,
+            isBlurred: isBlurred,
+            isLocked: isLocked,
+            notifyPartner: notifyPartner,
+          })
+
+          setCaption('')
+          setFile(null)
+          setProgress(0)
+          setUploading(false)
+          setIsBlurred(false)
+          setIsLocked(false)
+          setNotifyPartner(false)
+        } else {
+          console.error('Cloudinary error', xhr.responseText)
+          alert('Erro no servidor de imagens')
+          setUploading(false)
+        }
+      }
+
+      xhr.onerror = () => {
+        alert('Falha na conexão ao subir imagem')
         setUploading(false)
-        setIsBlurred(false)
-        setIsLocked(false)
-        setNotifyPartner(true)
-      })
+      }
+
+      xhr.send(formData)
+
     } catch (err) {
       console.error('Upload error', err)
-      alert('Erro ao enviar imagem')
+      alert('Erro ao processar imagem')
       setUploading(false)
     }
   }
