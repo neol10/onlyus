@@ -34,11 +34,19 @@ export default function Home() {
       setPosts(arr)
     })
 
-    // Escuta as configurações da sala do casal
+    // Escuta os dados da sala do casal (Data, Humores, etc)
     const coupleRef = doc(db, 'couples', profile.coupleId)
     const unsubCouple = onSnapshot(coupleRef, (docSnap) => {
-      if (docSnap.exists() && docSnap.data().settings) {
-        setCoupleData(docSnap.data().settings)
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        setCoupleData({
+          relationshipDate: data.relationshipDate || '',
+          myMood: data.moods?.[user.uid] || '🥰',
+          pinOnPosts: data.settings?.pinOnPosts || false,
+          blurPhotos: data.settings?.blurPhotos || false,
+          pinCode: data.settings?.pinCode || '',
+          theme: data.settings?.theme || 'Aurora'
+        })
       }
     })
 
@@ -46,11 +54,22 @@ export default function Home() {
   }, [user, profile?.coupleId, loading])
 
   const saveCoupleData = async (newData) => {
-    const merged = { ...coupleData, ...newData }
-    setCoupleData(merged)
-    if (user && db && profile?.coupleId) {
-      // Salva no doc da sala
-      await setDoc(doc(db, 'couples', profile.coupleId), { settings: merged }, { merge: true })
+    if (!user || !db || !profile?.coupleId) return
+    
+    const coupleRef = doc(db, 'couples', profile.coupleId)
+    
+    // Se mudou o humor, salva no mapa de humores por usuário
+    if (newData.myMood) {
+      await setDoc(coupleRef, { 
+        moods: { [user.uid]: newData.myMood } 
+      }, { merge: true })
+    }
+    
+    // Se mudou a data, salva o campo global
+    if (newData.relationshipDate !== undefined) {
+      await setDoc(coupleRef, { 
+        relationshipDate: newData.relationshipDate 
+      }, { merge: true })
     }
   }
 

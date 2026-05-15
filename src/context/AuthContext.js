@@ -37,31 +37,24 @@ export function AuthProvider({ children }) {
             const data = docSnap.data()
             setProfile(data)
             
-            // Se o perfil tem configurações, aplica o tema e salva no cache local imediatamente
-            if (data.settings && typeof window !== 'undefined') {
-              import('../theme').then(m => {
-                m.applyThemeToDocument(data.settings)
-                // Salva no localStorage para o próximo refresh carregar instantaneamente
-                const storageKey = m.getThemeSettingsKey(u.uid)
-                m.saveThemeSettings(storageKey, data.settings)
-              })
-            }
-            
-            setLoading(false)
-
-            // Se o usuário está em um casal, escuta também as configurações da sala (Global)
+            // Escuta as configurações da sala do casal (Global)
             if (data.coupleId) {
               const coupleRef = doc(db, 'couples', data.coupleId)
               onSnapshot(coupleRef, (coupleSnap) => {
                 if (coupleSnap.exists()) {
                   const coupleData = coupleSnap.data()
-                  // Se o casal mudou o tema, aplica para os dois
                   if (coupleData.settings && typeof window !== 'undefined') {
-                    import('../theme').then(m => m.applyThemeToDocument(coupleData.settings))
+                    import('../theme').then(m => {
+                      m.applyThemeToDocument(coupleData.settings)
+                      const storageKey = m.getThemeSettingsKey(u.uid)
+                      m.saveThemeSettings(storageKey, coupleData.settings)
+                    })
                   }
                 }
               })
             }
+            
+            setLoading(false)
           } else {
             const newProfile = {
               email: u.email,
