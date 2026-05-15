@@ -1,20 +1,34 @@
-import Document, { Html, Head, Main, NextScript } from 'next/document'
+import { Html, Head, Main, NextScript } from 'next/document'
 
-export default class MyDocument extends Document {
-  render() {
-    return (
-      <Html lang="pt-BR">
-        <Head>
-          <meta name="theme-color" content="#111827" />
-          <link rel="manifest" href="/manifest.json" />
-          <link rel="icon" href="/favicon.ico" />
-          <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        </Head>
-        <body>
-          <Main />
-          <NextScript />
-        </body>
-      </Html>
-    )
-  }
+export default function Document() {
+  return (
+    <Html lang="pt-BR">
+      <Head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const userId = localStorage.getItem('onlyus-active-user-id');
+                  const storageKey = userId ? 'onlyus-settings-' + userId : 'onlyus-settings-guest';
+                  const settings = JSON.parse(localStorage.getItem(storageKey));
+                  if (settings && settings.uiMode === 'Escuro') {
+                    document.documentElement.dataset.uiMode = 'Escuro';
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.dataset.uiMode = 'Claro';
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })()
+            `,
+          }}
+        />
+      </Head>
+      <body>
+        <Main />
+        <NextScript />
+      </body>
+    </Html>
+  )
 }

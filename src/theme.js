@@ -216,6 +216,14 @@ export function applyThemeToDocument(settings = DEFAULT_THEME_SETTINGS) {
 
   const theme = THEME_MAP[settings.theme] || THEME_MAP.Aurora
   const uiMode = settings.uiMode === 'Escuro' ? 'Escuro' : 'Claro'
+  
+  // Adiciona classe dark para suporte extra a seletores .dark
+  if (uiMode === 'Escuro') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+
   const mode = MODE_MAP[uiMode]
   const primary = getResolvedColor(settings.primary, settings.primaryHex, 'Azul gelo')
   const secondary = getResolvedColor(settings.secondary, settings.secondaryHex, 'Violeta')
@@ -270,6 +278,13 @@ export function saveThemeSettings(storageKey, settings) {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(storageKey, JSON.stringify(settings))
+    // Salva o ID do usuário para o pré-carregador do _document.js
+    if (storageKey.startsWith('onlyus-settings-')) {
+      const userId = storageKey.replace('onlyus-settings-', '')
+      if (userId !== 'guest') {
+        window.localStorage.setItem('onlyus-active-user-id', userId)
+      }
+    }
   } catch (err) {
     console.error('Failed to save theme settings:', err)
   }

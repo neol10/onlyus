@@ -37,9 +37,14 @@ export function AuthProvider({ children }) {
             const data = docSnap.data()
             setProfile(data)
             
-            // Se o perfil tem configurações, aplica o tema imediatamente
+            // Se o perfil tem configurações, aplica o tema e salva no cache local imediatamente
             if (data.settings && typeof window !== 'undefined') {
-              import('../theme').then(m => m.applyThemeToDocument(data.settings))
+              import('../theme').then(m => {
+                m.applyThemeToDocument(data.settings)
+                // Salva no localStorage para o próximo refresh carregar instantaneamente
+                const storageKey = m.getThemeSettingsKey(user.uid)
+                m.saveThemeSettings(storageKey, data.settings)
+              })
             }
             
             setLoading(false)

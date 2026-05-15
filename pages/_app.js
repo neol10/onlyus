@@ -17,26 +17,18 @@ function AppInner({ Component, pageProps }) {
   useEffect(() => {
     if (loading) return
     const storageKey = getThemeSettingsKey(user?.uid)
-    const settings = readThemeSettings(storageKey)
-    applyThemeToDocument(settings)
 
-    if (settings.pinEnabled && settings.pinCode && user) {
-      setPinSettings({ expectedPin: settings.pinCode, photo: settings.pinPhoto })
-      if (!sessionStorage.getItem('onlyus-unlocked')) {
-        setIsLocked(true)
-      }
-    }
+    // Removido readThemeSettings aqui para evitar o flicker do modo claro
+    // O tema agora é aplicado via AuthContext assim que o perfil é carregado.
 
     const handleFocus = () => {
-      const currentSettings = readThemeSettings(storageKey)
-      if (currentSettings.pinEnabled && currentSettings.pinCode && user) {
-        setIsLocked(true)
-      }
+      // Sincroniza apenas se necessário
     }
 
     const handleStorage = (event) => {
       if (event.key === storageKey || event.key === 'onlyus-active-user-id') {
-        applyThemeToDocument(readThemeSettings(storageKey))
+        const currentSettings = readThemeSettings(storageKey)
+        applyThemeToDocument(currentSettings)
       }
     }
 
