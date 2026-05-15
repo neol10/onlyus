@@ -63,9 +63,9 @@ export default function Login() {
             <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]" style={{ borderRadius: '999px' }}>
               OnlyUs
             </span>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">Seu espaço privado de memórias, com cara de produto premium.</h1>
+            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">Espaço romântico, harmônico e privado do seu parceiro.</h1>
             <p className="mt-4 max-w-lg text-base leading-7 text-slate-600 sm:text-lg">
-              Entre para acessar feed, timeline, galeria e cápsulas do tempo em uma experiência mais elegante e emocional.
+              Um refúgio digital exclusivo para vocês guardarem cada capítulo dessa história com elegância e carinho.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {['Privado', 'Romântico', 'Organizado'].map((item) => (

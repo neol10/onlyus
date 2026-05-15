@@ -65,9 +65,9 @@ export default function Signup() {
             <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]" style={{ borderRadius: '999px' }}>
               Comece o OnlyUs
             </span>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">Crie a conta e comece a construir a história de vocês.</h1>
+            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">Espaço romântico, harmônico e privado do seu parceiro.</h1>
             <p className="mt-4 max-w-lg text-base leading-7 text-slate-600 sm:text-lg">
-              Um espaço íntimo para salvar fotos, momentos e datas especiais com uma experiência visual mais refinada.
+              Crie seu refúgio digital exclusivo para guardar cada capítulo dessa história com elegância e carinho.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {['Cadastro rápido', 'Design premium', 'Memórias privadas'].map((item) => (
