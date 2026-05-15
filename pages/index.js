@@ -39,9 +39,13 @@ export default function Home() {
     const unsubCouple = onSnapshot(coupleRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data()
+        const partnerId = data.partnerA === user.uid ? data.partnerB : data.partnerA
+        
         setCoupleData({
           relationshipDate: data.relationshipDate || '',
           myMood: data.moods?.[user.uid] || '🥰',
+          partnerMood: data.moods?.[partnerId] || '🥰',
+          partnerId: partnerId,
           pinOnPosts: data.settings?.pinOnPosts || false,
           blurPhotos: data.settings?.blurPhotos || false,
           pinCode: data.settings?.pinCode || '',
@@ -96,9 +100,9 @@ export default function Home() {
           <LovePing />
           <main className="page-shell">
             <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
-          <div className="soft-card p-6 sm:p-8 flex flex-col justify-between h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-20 pointer-events-none">
-              <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <div className="soft-card p-6 sm:p-8 flex flex-col justify-between h-full relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
+              <svg className="w-40 h-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </div>
             
             <div>
@@ -138,22 +142,32 @@ export default function Home() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                 </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Vocês estão conectados</span>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Sincronizados</span>
               </div>
             </div>
             
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">Seu Humor Hoje</p>
-              <div className="flex gap-2 text-2xl">
-                {['🥰', '🥺', '🌶️', '😴'].map(m => (
-                  <button 
-                    key={m} 
-                    onClick={() => saveCoupleData({ myMood: m })}
-                    className={`transition-transform hover:scale-125 ${coupleData.myMood === m ? 'scale-125 drop-shadow-lg opacity-100' : 'opacity-40 grayscale'}`}
-                  >
-                    {m}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">Seu Humor</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl drop-shadow-md">{coupleData.myMood}</span>
+                    <button 
+                      onClick={() => {
+                        const emoji = prompt('Escolha seu emoji de hoje:')
+                        if (emoji) saveCoupleData({ myMood: emoji })
+                      }}
+                      className="text-xs text-slate-400 hover:text-[var(--ou-accent)]"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+                </div>
+                <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+                <div className="text-right">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">O Amor</p>
+                  <span className="text-3xl drop-shadow-md">{coupleData.partnerMood}</span>
+                </div>
               </div>
             </div>
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
