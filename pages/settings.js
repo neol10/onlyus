@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import NavBar from '../components/NavBar'
 import { useAuth } from '../src/context/AuthContext'
 import { db } from '../src/firebase/firebaseClient'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, updateDoc } from 'firebase/firestore'
 import { applyThemeToDocument, getThemeSettingsKey, readThemeSettings } from '../src/theme'
 
 const DEFAULT_SETTINGS = {
@@ -468,6 +468,30 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+
+              {profile?.coupleId && (
+                <div className="mt-8 pt-6 border-t border-rose-100 dark:border-rose-500/10">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3">Zona de Perigo</p>
+                  <button 
+                    onClick={async () => {
+                      if (confirm('Tem certeza que deseja desvincular seu parceiro? Isso não apagará suas memórias, mas vocês não estarão mais conectados.')) {
+                        try {
+                          const userRef = doc(db, 'users', user.uid)
+                          await updateDoc(userRef, { coupleId: null })
+                          // Nota: O parceiro precisará desvincular do lado dele ou o admin limpa
+                          window.location.href = '/'
+                        } catch (e) {
+                          alert('Erro ao desvincular.')
+                        }
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    Desvincular Parceiro
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="soft-card p-6 sm:p-7">
