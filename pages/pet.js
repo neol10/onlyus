@@ -172,6 +172,21 @@ export default function PetPage() {
                 <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Alimentar</span>
               </button>
             </div>
+
+            <button 
+              onClick={async () => {
+                const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+                await setDoc(notifRef, {
+                  from: user.uid,
+                  message: `O ${petData.name} está com fome! 🥺`,
+                  timestamp: Date.now()
+                })
+                alert('Alerta de fome enviado ao Amor!')
+              }}
+              className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity"
+            >
+              <span>Chamar para Alimentar 🔔</span>
+            </button>
           </div>
         </div>
       </main>

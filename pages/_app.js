@@ -59,10 +59,33 @@ function AppInner({ Component, pageProps }) {
       })
     }
 
+    // Listener de Notificações do Casal (ex: Alimentar Pet)
+    let unsubNotif = null
+    if (user && db) {
+      // Primeiro pegamos o perfil para saber o coupleId
+      const userRef = doc(db, 'users', user.uid)
+      onSnapshot(userRef, (uSnap) => {
+        if (uSnap.exists() && uSnap.data().coupleId) {
+          const cId = uSnap.data().coupleId
+          const notifRef = doc(db, 'couples', cId, 'notifications', 'latest')
+          unsubNotif = onSnapshot(notifRef, (nSnap) => {
+            if (nSnap.exists()) {
+              const notif = nSnap.data()
+              // Só mostra se for recente (últimos 30 segundos) e não for do próprio autor
+              if (notif.timestamp > Date.now() - 30000 && notif.from !== user.uid) {
+                alert(`🔔 Mensagem do Amor: ${notif.message}`)
+              }
+            }
+          })
+        }
+      })
+    }
+
     return () => {
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener('storage', handleStorage)
       if (unsubFirestore) unsubFirestore()
+      if (unsubNotif) unsubNotif()
     }
   }, [user, loading, router.pathname])
 
@@ -84,11 +107,11 @@ function AppInner({ Component, pageProps }) {
       <AnimatePresence mode="wait">
         <motion.div
           key={router.pathname}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="min-h-screen"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'linear' }}
+          className="min-h-screen will-change-opacity"
         >
           <Component {...pageProps} />
         </motion.div>
