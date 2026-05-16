@@ -172,8 +172,16 @@ export default function SettingsPage() {
     if (!explicitSettings) alert('Configurações salvas! ✨')
   }
 
-  // Função para Ativar Biometria (WebAuthn)
-  const handleEnableBiometrics = async () => {
+  // Função para Alternar Biometria (WebAuthn)
+  const handleToggleBiometrics = async () => {
+    if (settings.biometricsEnabled) {
+      // Se já estiver ativado, apenas desativa
+      updateSetting('biometricsEnabled', false)
+      updateSetting('biometricCredentialId', '')
+      handleSave({ ...settings, biometricsEnabled: false, biometricCredentialId: '' })
+      return
+    }
+
     try {
       if (!window.PublicKeyCredential) {
         alert('Seu dispositivo não suporta biometria no navegador.')
@@ -202,7 +210,6 @@ export default function SettingsPage() {
       })
 
       if (credential) {
-        // Converte o ID para string para salvar no Firebase
         const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
         
         updateSetting('biometricsEnabled', true)
@@ -468,10 +475,10 @@ export default function SettingsPage() {
                       <span className="mt-1 block text-xs text-slate-500">Usar reconhecimento nativo para desbloqueio.</span>
                     </div>
                     <button 
-                      onClick={handleEnableBiometrics}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${settings.biometricsEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 dark:bg-white/10 text-slate-600'}`}
+                      onClick={handleToggleBiometrics}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${settings.biometricsEnabled ? 'bg-emerald-100 text-emerald-600 shadow-sm' : 'bg-slate-200 dark:bg-white/10 text-slate-600'}`}
                     >
-                      {settings.biometricsEnabled ? 'Ativado ✓' : 'Ativar'}
+                      {settings.biometricsEnabled ? 'Desativar ✓' : 'Ativar'}
                     </button>
                   </div>
                 </div>
