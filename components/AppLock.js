@@ -16,14 +16,11 @@ export default function AppLock({ children }) {
   const biometricsEnabled = settings.biometricsEnabled
   const biometricCredentialId = settings.biometricCredentialId
 
-  // O app deve travar se o PIN estiver ligado OU se a Biometria estiver ligada
   const isSecurityActive = useMemo(() => pinEnabled || biometricsEnabled, [pinEnabled, biometricsEnabled])
 
   useEffect(() => {
     if (!loading) {
       const isUnlocked = sessionStorage.getItem('app_unlocked') === 'true'
-      
-      // Se não houver nenhuma segurança ativa ou se já desbloqueou nesta sessão, libera
       if (!isSecurityActive || isUnlocked) {
         setIsLocked(false)
       } else {
@@ -33,13 +30,12 @@ export default function AppLock({ children }) {
     }
   }, [loading, isSecurityActive])
 
-  const handleBiometricAuth = async (e) => {
+  const handleBiometricAuth = useCallback(async (e) => {
     if (e) e.preventDefault()
     if (!biometricsEnabled || !window.PublicKeyCredential) return
 
     try {
-      setAuthStatus('Solicitando biometria...')
-      
+      setAuthStatus('Verificando biometria...')
       const challenge = new Uint8Array(32)
       window.crypto.getRandomValues(challenge)
 
@@ -60,15 +56,24 @@ export default function AppLock({ children }) {
 
       const assertion = await navigator.credentials.get(options)
       if (assertion) {
-        setAuthStatus('Desbloqueado!')
+        setAuthStatus('Acesso liberado!')
         unlock()
       }
     } catch (err) {
       console.log('Erro biometria:', err)
-      setAuthStatus('Falha na biometria. Use o PIN.')
-      setTimeout(() => setAuthStatus(''), 3000)
+      setAuthStatus('Clique no escudo para tentar novamente')
     }
-  }
+  }, [biometricsEnabled, biometricCredentialId])
+
+  // Tenta biometria automática após carregar
+  useEffect(() => {
+    if (isLocked && biometricsEnabled && isMounted) {
+      const timer = setTimeout(() => {
+        handleBiometricAuth().catch(() => {})
+      }, 800)
+      return () => clearTimeout(timer)
+    }
+  }, [isLocked, biometricsEnabled, isMounted, handleBiometricAuth])
 
   const unlock = () => {
     setIsLocked(false)
@@ -78,7 +83,7 @@ export default function AppLock({ children }) {
   }
 
   const handleKeyPress = (num) => {
-    if (error) return
+    if (!pinEnabled || error) return
     const nextPin = (pin + num).slice(0, 4)
     setPin(nextPin)
     
@@ -120,82 +125,81 @@ export default function AppLock({ children }) {
                 whileTap={{ scale: 0.95 }}
                 onClick={handleBiometricAuth}
                 animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
-                className="w-20 h-20 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-2xl mx-auto cursor-pointer"
+                className="w-24 h-24 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl mx-auto cursor-pointer"
               >
-                <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {biometricsEnabled ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  )}
+                <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 3c1.258 0 2.453.232 3.555.656m3.43 2.051A10.003 10.003 0 0121 12c0 1.258-.232 2.453-.656 3.555" />
                 </svg>
               </motion.button>
 
-              <h2 className="text-xl font-bold text-white mb-1">Cofre OnlyUs</h2>
-              <p className="text-slate-400 text-xs mb-8">
-                {authStatus || (biometricsEnabled ? 'Clique no escudo para Biometria' : 'Digite o PIN')}
+              <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Cofre OnlyUs</h2>
+              <p className="text-slate-400 text-sm mb-10 font-medium">
+                {authStatus || (biometricsEnabled ? 'Identidade Necessária' : 'Digite seu PIN')}
               </p>
 
-              <div className="flex justify-center gap-4 mb-10">
-                {[0, 1, 2, 3].map((i) => (
-                  <div 
-                    key={i}
-                    className={`w-3 h-3 rounded-full border-2 transition-all duration-150 ${
-                      pin.length > i 
-                        ? 'bg-white border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.5)]' 
-                        : 'border-white/20'
-                    } ${error ? 'border-rose-500 bg-rose-500' : ''}`}
-                  />
-                ))}
-              </div>
+              {/* Só mostra os pontos e o teclado se o PIN estiver habilitado */}
+              {pinEnabled && (
+                <>
+                  <div className="flex justify-center gap-4 mb-12">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div 
+                        key={i}
+                        className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-150 ${
+                          pin.length > i 
+                            ? 'bg-white border-white scale-110 shadow-[0_0_12px_rgba(255,255,255,0.4)]' 
+                            : 'border-white/20'
+                        } ${error ? 'border-rose-500 bg-rose-500' : ''}`}
+                      />
+                    ))}
+                  </div>
 
-              <div className="grid grid-cols-3 gap-x-8 gap-y-6">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => handleKeyPress(num)}
-                    className="h-16 w-16 rounded-full flex items-center justify-center text-3xl font-light text-white bg-white/5 active:bg-white/20 active:scale-90 transition-all mx-auto select-none"
-                  >
-                    {num}
-                  </button>
-                ))}
-                
-                <div className="flex items-center justify-center">
-                  {biometricsEnabled ? (
+                  <div className="grid grid-cols-3 gap-x-8 gap-y-6">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => handleKeyPress(num)}
+                        className="h-16 w-16 rounded-full flex items-center justify-center text-3xl font-light text-white bg-white/5 active:bg-white/20 active:scale-90 transition-all mx-auto select-none"
+                      >
+                        {num}
+                      </button>
+                    ))}
+                    
+                    <div className="w-16" />
+
                     <button
                       type="button"
-                      onClick={handleBiometricAuth}
-                      className="h-16 w-16 rounded-full flex items-center justify-center text-indigo-400 bg-indigo-500/10 active:bg-indigo-500/30 transition-all"
+                      onClick={() => handleKeyPress(0)}
+                      className="h-16 w-16 rounded-full flex items-center justify-center text-3xl font-light text-white bg-white/5 active:bg-white/20 active:scale-90 transition-all mx-auto select-none"
                     >
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 3c1.258 0 2.453.232 3.555.656m3.43 2.051A10.003 10.003 0 0121 12c0 1.258-.232 2.453-.656 3.555" />
-                      </svg>
+                      0
                     </button>
-                  ) : <div className="w-16" />}
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleKeyPress(0)}
-                  className="h-16 w-16 rounded-full flex items-center justify-center text-3xl font-light text-white bg-white/5 active:bg-white/20 active:scale-90 transition-all mx-auto select-none"
+                    <div className="flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setPin(pin.slice(0, -1))}
+                        disabled={pin.length === 0}
+                        className={`h-16 w-16 rounded-full flex items-center justify-center text-white bg-white/5 active:bg-white/20 active:scale-90 transition-all select-none ${pin.length === 0 ? 'opacity-0' : 'opacity-100'}`}
+                      >
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 002.828 0L21 9" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Se apenas biometria estiver ativa, mostra um botão de tentativa manual maior se o auto falhar */}
+              {!pinEnabled && biometricsEnabled && (
+                <button 
+                  onClick={handleBiometricAuth}
+                  className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-sm font-semibold transition-all active:scale-95 border border-white/10"
                 >
-                  0
+                  Tentar Biometria de Novo
                 </button>
-
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => setPin(pin.slice(0, -1))}
-                    disabled={pin.length === 0}
-                    className={`h-16 w-16 rounded-full flex items-center justify-center text-white bg-white/5 active:bg-white/20 active:scale-90 transition-all select-none ${pin.length === 0 ? 'opacity-0' : 'opacity-100'}`}
-                  >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 002.828 0L21 9" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           </motion.div>
         ) : (
