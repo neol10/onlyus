@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../src/context/AuthContext'
 import { db } from '../src/firebase/firebaseClient'
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
+import { doc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore'
 
 export default function PostCard({ post = {}, settings = {} }) {
   const { user, profile } = useAuth()
@@ -20,6 +20,33 @@ export default function PostCard({ post = {}, settings = {} }) {
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [isLiking, setIsLiking] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editCaption, setEditCaption] = useState(caption)
+
+  const handleDelete = async () => {
+    if (!profile?.coupleId || !postId) return
+    if (confirm('Tem certeza que deseja excluir esta lembrança?')) {
+      try {
+        const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
+        await deleteDoc(postRef)
+      } catch (err) {
+        console.error('Erro ao excluir:', err)
+        alert('Erro ao excluir postagem')
+      }
+    }
+  }
+
+  const handleUpdate = async () => {
+    if (!profile?.coupleId || !postId) return
+    try {
+      const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
+      await updateDoc(postRef, { caption: editCaption })
+      setIsEditing(false)
+    } catch (err) {
+      console.error('Erro ao editar:', err)
+      alert('Erro ao editar postagem')
+    }
+  }
 
   useEffect(() => {
     setIsBlurred(postBlurred || settings.blurPhotos || false)
@@ -65,13 +92,47 @@ export default function PostCard({ post = {}, settings = {} }) {
             </div>
           </div>
         </div>
-        {post.notifyPartner && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {post.authorId === user?.uid && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsEditing(!isEditing)}
+                className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-indigo-500 transition-colors"
+                title="Editar postagem"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              </button>
+              <button 
+                onClick={handleDelete}
+                className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors"
+                title="Excluir postagem"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
+            </div>
+          )}
+          {post.notifyPartner && (
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
+            </div>
+          )}
+        </div>
       </header>
-      <div className="px-5 pt-4 text-[15px] leading-7 text-slate-700 dark:text-slate-300">{caption}</div>
+      {isEditing ? (
+        <div className="px-5 pt-4">
+          <textarea 
+            value={editCaption}
+            onChange={(e) => setEditCaption(e.target.value)}
+            className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[100px]"
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-xs font-bold text-slate-500">Cancelar</button>
+            <button onClick={handleUpdate} className="bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20">Salvar Alterações</button>
+          </div>
+        </div>
+      ) : (
+        <div className="px-5 pt-4 text-[15px] leading-7 text-slate-700 dark:text-slate-300">{caption}</div>
+      )}
       {images && images.length > 0 && (
         <div className="mt-4 grid grid-cols-1 gap-2 px-5 relative">
           {images.map((src, i) => (

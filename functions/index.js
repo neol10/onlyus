@@ -1,64 +1,37 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-admin.initializeApp();
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
-exports.onNotificationCreated = functions.firestore
-    .document("couples/{coupleId}/notifications/latest")
-    .onWrite(async (change, context) => {
-      const data = change.after.data();
-      if (!data) return null;
+initializeApp();
 
-      const {coupleId} = context.params;
-      const {from, message, type} = data;
+exports.testNotification = onDocumentWritten("couples/{coupleId}/notifications/latest", async (event) => {
+  const data = event.data.after.data();
+  if (!data) return null;
 
-      // 1. Buscar os dados do casal para saber quem é o parceiro
-      const coupleSnap = await admin.firestore().doc(`couples/${coupleId}`).get();
-      if (!coupleSnap.exists) return null;
+  try {
+    const db = getFirestore();
+    const messaging = getMessaging();
 
-      const coupleData = coupleSnap.data();
-      const partnerId = coupleData.partnerA === from ? 
-                        coupleData.partnerB : coupleData.partnerA;
+    const coupleSnap = await db.doc(`couples/${event.params.coupleId}`).get();
+    if (!coupleSnap.exists) return null;
 
-      if (!partnerId) return null;
+    const { partnerA, partnerB } = coupleSnap.data();
+    const partnerId = partnerA === data.from ? partnerB : partnerA;
+    if (!partnerId) return null;
 
-      // 2. Buscar o token FCM do parceiro
-      const userSnap = await admin.firestore().doc(`users/${partnerId}`).get();
-      if (!userSnap.exists) return null;
+    const userSnap = await db.doc(`users/${partnerId}`).get();
+    if (!userSnap.exists) return null;
 
-      const userData = userSnap.data();
-      const fcmToken = userData.fcmToken;
+    const token = userSnap.data().fcmToken;
+    if (!token) return null;
 
-      if (!fcmToken) {
-        console.log("Parceiro não tem token FCM registrado.");
-        return null;
-      }
-
-      // 3. Enviar a notificação via FCM
-      const payload = {
-        token: fcmToken,
-        notification: {
-          title: "OnlyUs ❤️",
-          body: message,
-        },
-        data: {
-          click_action: "FLUTTER_NOTIFICATION_CLICK", // Para compatibilidade
-          type: type || "general",
-        },
-        android: {
-          priority: "high",
-          notification: {
-            icon: "stock_ticker_update",
-            color: "#6366f1",
-          },
-        },
-      };
-
-      try {
-        await admin.messaging().send(payload);
-        console.log(`Notificação enviada com sucesso para ${partnerId}`);
-      } catch (error) {
-        console.error("Erro ao enviar notificação:", error);
-      }
-
-      return null;
+    await messaging.send({
+      token: token,
+      notification: { title: "OnlyUs ❤️", body: data.message }
     });
+  } catch (e) {
+    console.error(e);
+  }
+  return null;
+});
