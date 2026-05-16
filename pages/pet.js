@@ -1,51 +1,67 @@
-  // Efeito Visual de Chama Animada
-  const FlameEffect = ({ streak, isLosing }) => {
-    if (streak === 0 && !isLosing) return null
-    const now = new Date()
-    const isLateNight = now.getHours() >= 22 // Quase meia-noite
-    
-    return (
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <AnimatePresence>
-          {!isLosing ? (
-            // Fogo Ativo
-            [...Array(Math.min(streak + 3, 15))].map((_, i) => (
-              <motion.div
-                key={`flame-${i}`}
-                initial={{ opacity: 0, y: 0, scale: 1 }}
-                animate={{ 
-                  opacity: [0, 0.7, 0], 
-                  y: -100 - (Math.random() * 50), 
-                  x: (Math.random() - 0.5) * 60,
-                  scale: [1, 1.5, 0.5]
-                }}
-                transition={{ 
-                  duration: 1 + Math.random(), 
-                  repeat: Infinity, 
-                  delay: i * 0.1 
-                }}
-                className={`absolute w-4 h-4 rounded-full blur-md ${
-                  isLateNight ? 'bg-slate-500' : (streak > 10 ? 'bg-cyan-400' : 'bg-orange-500')
-                }`}
-              />
-            ))
-          ) : (
-            // Fumaça de Perda
-            [...Array(10)].map((_, i) => (
-              <motion.div
-                key={`smoke-${i}`}
-                initial={{ opacity: 0, y: 0 }}
-                animate={{ opacity: [0, 0.3, 0], y: -120, x: (Math.random() - 0.5) * 100, scale: [1, 3] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                className="absolute w-6 h-6 bg-slate-400 rounded-full blur-lg"
-              />
-            ))
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
+import { useEffect, useState } from 'react'
+import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { db } from '../src/firebase/firebaseClient'
+import { useAuth } from '../src/context/AuthContext'
+import { motion, AnimatePresence } from 'framer-motion'
+import NavBar from '../components/NavBar'
+import { useToast } from '../src/context/ToastContext'
 
+const PET_TYPES = {
+  cat: { emoji: '🐱', name: 'Gatinho' },
+  dog: { emoji: '🐶', name: 'Cachorrinho' },
+  rabbit: { emoji: '🐰', name: 'Coelhinho' },
+  bear: { emoji: '🐻', name: 'Ursinho' }
+}
+
+// Efeito Visual de Chama Animada
+const FlameEffect = ({ streak, isLosing }) => {
+  if (streak === 0 && !isLosing) return null
+  const now = new Date()
+  const isLateNight = now.getHours() >= 22 // Quase meia-noite
+  
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <AnimatePresence>
+        {!isLosing ? (
+          // Fogo Ativo
+          [...Array(Math.min(streak + 3, 15))].map((_, i) => (
+            <motion.div
+              key={`flame-${i}`}
+              initial={{ opacity: 0, y: 0, scale: 1 }}
+              animate={{ 
+                opacity: [0, 0.7, 0], 
+                y: -100 - (Math.random() * 50), 
+                x: (Math.random() - 0.5) * 60,
+                scale: [1, 1.5, 0.5]
+              }}
+              transition={{ 
+                duration: 1 + Math.random(), 
+                repeat: Infinity, 
+                delay: i * 0.1 
+              }}
+              className={`absolute w-4 h-4 rounded-full blur-md ${
+                isLateNight ? 'bg-slate-500' : (streak > 10 ? 'bg-cyan-400' : 'bg-orange-500')
+              }`}
+            />
+          ))
+        ) : (
+          // Fumaça de Perda
+          [...Array(10)].map((_, i) => (
+            <motion.div
+              key={`smoke-${i}`}
+              initial={{ opacity: 0, y: 0 }}
+              animate={{ opacity: [0, 0.3, 0], y: -120, x: (Math.random() - 0.5) * 100, scale: [1, 3] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+              className="absolute w-6 h-6 bg-slate-400 rounded-full blur-lg"
+            />
+          ))
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export default function PetPage() {
   const { user, profile, loading } = useAuth()
   const { showToast } = useToast()
   const [petData, setPetData] = useState(null)
@@ -87,7 +103,6 @@
                              Object.keys(pet.interactions[todayKey]).length === 2
         if (now.getHours() >= 20 && !isMissionDone) {
           setIsUrgent(true)
-          showToast('URGENTE: Nossa chama vai apagar à meia-noite! 🔥🆘', 'error')
         } else {
           setIsUrgent(false)
         }
@@ -177,7 +192,6 @@
       <NavBar />
       
       <main className="max-w-2xl mx-auto px-4 pt-10 relative">
-        {/* Fundo de Alerta se for Urgente */}
         <AnimatePresence>
           {isUrgent && (
             <motion.div 
