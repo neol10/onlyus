@@ -7,6 +7,10 @@
   body,
   #__next {
     height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
   }
 
   body {
@@ -204,14 +208,16 @@
   }
 
   .topbar-shell {
-    @apply sticky top-0 z-40 border-b backdrop-blur-2xl;
+    @apply sticky top-0 z-40 border-b backdrop-blur-2xl w-full;
     border-color: color-mix(in srgb, var(--ou-accent-soft, rgba(99,102,241,0.18)) 55%, rgba(255, 255, 255, 0.6));
     background: color-mix(in srgb, var(--ou-topbar-bg, rgba(255,255,255,0.92)) 98%, white);
     box-shadow: 0 4px 30px rgba(15, 23, 42, 0.12);
+    left: 0;
+    right: 0;
   }
 
   .bottombar-shell {
-    @apply fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-2xl;
+    @apply fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-2xl w-full;
     border-color: color-mix(in srgb, var(--ou-accent-soft, rgba(99,102,241,0.18)) 55%, rgba(255, 255, 255, 0.6));
     background: linear-gradient(180deg, color-mix(in srgb, var(--ou-topbar-bg, rgba(255,255,255,0.9)) 96%, white), var(--ou-card-bg, rgba(255,255,255,0.95)));
     box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.08);
