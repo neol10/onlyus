@@ -16,27 +16,33 @@ export default function AppLock({ children }) {
   const biometricsEnabled = settings.biometricsEnabled
   const biometricCredentialId = settings.biometricCredentialId
 
+  // O app deve travar se o PIN estiver ligado OU se a Biometria estiver ligada
+  const isSecurityActive = useMemo(() => pinEnabled || biometricsEnabled, [pinEnabled, biometricsEnabled])
+
   useEffect(() => {
     if (!loading) {
       const isUnlocked = sessionStorage.getItem('app_unlocked') === 'true'
-      if (!pinEnabled || isUnlocked) {
+      
+      // Se não houver nenhuma segurança ativa ou se já desbloqueou nesta sessão, libera
+      if (!isSecurityActive || isUnlocked) {
         setIsLocked(false)
+      } else {
+        setIsLocked(true)
       }
       setIsMounted(true)
     }
-  }, [loading, pinEnabled])
+  }, [loading, isSecurityActive])
 
   const handleBiometricAuth = async (e) => {
     if (e) e.preventDefault()
     if (!biometricsEnabled || !window.PublicKeyCredential) return
 
     try {
-      setAuthStatus('Solicitando permissão...')
+      setAuthStatus('Solicitando biometria...')
       
       const challenge = new Uint8Array(32)
       window.crypto.getRandomValues(challenge)
 
-      // Prepara as opções de autenticação com o ID salvo
       const options = {
         publicKey: {
           challenge,
@@ -45,27 +51,20 @@ export default function AppLock({ children }) {
         }
       }
 
-      // Se temos o ID salvo, precisamos passar ele para o navegador saber qual chave usar
       if (biometricCredentialId) {
         try {
-          // Decodifica o ID de Base64 de volta para binário (Uint8Array)
           const rawId = Uint8Array.from(atob(biometricCredentialId.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
-          options.publicKey.allowCredentials = [{
-            id: rawId,
-            type: 'public-key'
-          }]
-        } catch (e) {
-          console.error('Erro na decodificação do ID')
-        }
+          options.publicKey.allowCredentials = [{ id: rawId, type: 'public-key' }]
+        } catch (e) {}
       }
 
       const assertion = await navigator.credentials.get(options)
       if (assertion) {
-        setAuthStatus('Identidade confirmada!')
+        setAuthStatus('Desbloqueado!')
         unlock()
       }
     } catch (err) {
-      console.error('Erro biometria detalhado:', err)
+      console.log('Erro biometria:', err)
       setAuthStatus('Falha na biometria. Use o PIN.')
       setTimeout(() => setAuthStatus(''), 3000)
     }
@@ -134,7 +133,7 @@ export default function AppLock({ children }) {
 
               <h2 className="text-xl font-bold text-white mb-1">Cofre OnlyUs</h2>
               <p className="text-slate-400 text-xs mb-8">
-                {authStatus || (biometricsEnabled ? 'Toque no escudo para Biometria' : 'Digite o PIN')}
+                {authStatus || (biometricsEnabled ? 'Clique no escudo para Biometria' : 'Digite o PIN')}
               </p>
 
               <div className="flex justify-center gap-4 mb-10">
