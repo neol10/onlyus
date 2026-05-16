@@ -4,7 +4,7 @@ import { useAuth } from '../src/context/AuthContext'
 
 export default function AppLock({ children }) {
   const { profile, loading } = useAuth()
-  const [isLocked, setIsLocked] = useState(true) // Começa bloqueado por padrão se houver PIN
+  const [isLocked, setIsLocked] = useState(true)
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
   const [authStatus, setAuthStatus] = useState('')
@@ -15,7 +15,6 @@ export default function AppLock({ children }) {
   const correctPin = settings.pinCode
   const biometricsEnabled = settings.biometricsEnabled
 
-  // Verifica estado de bloqueio inicial
   useEffect(() => {
     if (!loading) {
       const isUnlocked = sessionStorage.getItem('app_unlocked') === 'true'
@@ -26,47 +25,38 @@ export default function AppLock({ children }) {
     }
   }, [loading, pinEnabled])
 
-  const handleBiometricAuth = useCallback(async () => {
+  // A função de biometria AGORA PRECISA de um clique real do usuário
+  const handleBiometricAuth = async (e) => {
+    if (e) e.preventDefault()
     if (!biometricsEnabled || !window.PublicKeyCredential) return
 
     try {
-      setAuthStatus('Aguardando Biometria...')
+      setAuthStatus('Verificando identidade...')
       
       const challenge = new Uint8Array(32)
       window.crypto.getRandomValues(challenge)
 
-      // Modo de autenticação simplificado (mais compatível)
       const options = {
         publicKey: {
           challenge,
           timeout: 60000,
           userVerification: "required",
-          // Não passamos allowCredentials para forçar o navegador a pedir qualquer biometria válida do dono do cel
-          authenticatorSelection: { 
-            authenticatorAttachment: "platform",
-            userVerification: "required"
-          }
+          // Removido allowCredentials para permitir qualquer biometria do sistema
         }
       }
 
+      // IMPORTANTE: Isso deve ser chamado como resultado direto de um onClick
       const assertion = await navigator.credentials.get(options)
       if (assertion) {
+        setAuthStatus('Desbloqueado!')
         unlock()
       }
     } catch (err) {
       console.log('Erro biometria:', err)
-      setAuthStatus('Biometria falhou. Use o PIN.')
-      setTimeout(() => setAuthStatus(''), 3000)
+      setAuthStatus('Tente novamente ou use o PIN')
+      setTimeout(() => setAuthStatus(''), 2000)
     }
-  }, [biometricsEnabled])
-
-  // Dispara biometria automática ao montar se estiver travado
-  useEffect(() => {
-    if (isLocked && biometricsEnabled && isMounted) {
-      const timer = setTimeout(handleBiometricAuth, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [isLocked, biometricsEnabled, isMounted, handleBiometricAuth])
+  }
 
   const unlock = () => {
     setIsLocked(false)
@@ -92,7 +82,6 @@ export default function AppLock({ children }) {
     }
   }
 
-  // Se ainda estiver carregando o perfil, não mostra nada para evitar flashes de UI
   if (!isMounted) return null
 
   return (
@@ -102,29 +91,37 @@ export default function AppLock({ children }) {
           <motion.div 
             key="lock-screen"
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950 overflow-hidden touch-none"
           >
             {settings.pinPhoto && (
               <div 
-                className="absolute inset-0 z-0 opacity-30 blur-md bg-cover bg-center scale-110"
+                className="absolute inset-0 z-0 opacity-30 blur-md bg-cover bg-center"
                 style={{ backgroundImage: `url(${settings.pinPhoto})` }}
               />
             )}
 
             <div className="relative z-10 w-full max-w-[320px] px-6 text-center">
-              <motion.div 
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBiometricAuth}
                 animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
-                className="w-20 h-20 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-2xl mx-auto"
+                className="w-20 h-20 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-2xl mx-auto cursor-pointer"
               >
                 <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  {biometricsEnabled ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  )}
                 </svg>
-              </motion.div>
+              </motion.button>
 
               <h2 className="text-xl font-bold text-white mb-1">Cofre OnlyUs</h2>
-              <p className="text-slate-400 text-xs mb-8">{authStatus || 'Protegido por PIN e Biometria'}</p>
+              <p className="text-slate-400 text-xs mb-8">
+                {authStatus || (biometricsEnabled ? 'Clique no escudo para Biometria' : 'Digite o PIN')}
+              </p>
 
               <div className="flex justify-center gap-4 mb-10">
                 {[0, 1, 2, 3].map((i) => (
@@ -152,17 +149,17 @@ export default function AppLock({ children }) {
                 ))}
                 
                 <div className="flex items-center justify-center">
-                  {biometricsEnabled && (
+                  {biometricsEnabled ? (
                     <button
                       type="button"
                       onClick={handleBiometricAuth}
                       className="h-16 w-16 rounded-full flex items-center justify-center text-indigo-400 bg-indigo-500/10 active:bg-indigo-500/30 transition-all"
                     >
                       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 3c1.258 0 2.453.232 3.555.656m3.43 2.051A10.003 10.003 0 0121 12c0 1.258-.232 2.453-.656 3.555" />
                       </svg>
                     </button>
-                  )}
+                  ) : <div className="w-16" />}
                 </div>
 
                 <button
