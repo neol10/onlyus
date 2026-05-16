@@ -129,41 +129,60 @@ export default function AppLock({ children }) {
                 />
 
                 {/* Teclado Customizado (Opcional, mas melhora UX no Mobile) */}
-                <div className="grid grid-cols-3 gap-4 mt-8">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0].map((num, i) => (
+                <div className="grid grid-cols-3 gap-6 mt-8 w-full">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
-                      key={i}
+                      key={num}
                       type="button"
                       onClick={() => {
-                        if (num === '') return
                         const nextPin = (pin + num).slice(0, 4)
                         setPin(nextPin)
                       }}
-                      className={`h-16 w-16 rounded-full flex items-center justify-center text-xl font-bold text-white transition-colors active:bg-white/20 ${num === '' ? 'pointer-events-none' : 'bg-white/5'}`}
+                      className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-semibold text-white bg-white/5 active:bg-white/20 transition-colors mx-auto"
                     >
                       {num}
                     </button>
                   ))}
-                  {biometricsEnabled && (
-                    <button
-                      type="button"
-                      onClick={handleBiometricAuth}
-                      className="h-16 w-16 rounded-full flex items-center justify-center bg-indigo-500/20 text-indigo-400 active:bg-indigo-500/40"
-                    >
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </button>
-                  )}
+                  
+                  {/* Linha Inferior */}
+                  <div className="flex items-center justify-center">
+                    {biometricsEnabled && (
+                      <button
+                        type="button"
+                        onClick={handleBiometricAuth}
+                        className="h-16 w-16 rounded-full flex items-center justify-center text-indigo-400 bg-indigo-500/10 active:bg-indigo-500/20 transition-colors"
+                      >
+                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setPin(pin.slice(0, -1))}
-                    className="h-16 w-16 rounded-full flex items-center justify-center bg-white/5 text-white active:bg-white/20"
+                    onClick={() => {
+                      const nextPin = (pin + '0').slice(0, 4)
+                      setPin(nextPin)
+                    }}
+                    className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-semibold text-white bg-white/5 active:bg-white/20 transition-colors mx-auto"
                   >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 002.828 0L21 9" />
-                    </svg>
+                    0
                   </button>
+
+                  <div className="flex items-center justify-center">
+                    {pin.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPin(pin.slice(0, -1))}
+                        className="h-16 w-16 rounded-full flex items-center justify-center text-white bg-white/5 active:bg-white/20 transition-colors"
+                      >
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 002.828 0L21 9" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </div>
