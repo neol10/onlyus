@@ -92,7 +92,10 @@ export default function SettingsPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   const [settings, setSettings] = useState(null)
+  const [localDisplayName, setLocalDisplayName] = useState('')
+  const [localPartnerNick, setLocalPartnerNick] = useState('')
   const [savedAt, setSavedAt] = useState('')
+  const [saving, setSaving] = useState(false)
 
   // 1. Bloqueio de acesso se não logado
   useEffect(() => {
@@ -108,44 +111,70 @@ export default function SettingsPage() {
     // Se já temos as configurações no perfil do Firestore, usamos elas
     if (profile.settings) {
       setSettings(profile.settings)
+      setLocalDisplayName(profile.settings.displayName || '')
+      setLocalPartnerNick(profile.settings.partnerNick || 'Amor')
       applyThemeToDocument(profile.settings)
     } else {
       // Fallback para o que estiver no navegador
       const resolvedKey = getThemeSettingsKey(user?.uid)
       const persisted = readThemeSettings(resolvedKey)
       setSettings(persisted)
+      setLocalDisplayName(persisted.displayName || '')
+      setLocalPartnerNick(persisted.partnerNick || 'Amor')
       applyThemeToDocument(persisted)
     }
   }, [loading, profile, user?.uid])
 
-  // 3. Salvar mudanças (Sincronização Global)
-  const updateSetting = async (key, value) => {
-    if (!settings) return
-    const newSettings = { ...settings, [key]: value }
-    setSettings(newSettings)
-    applyThemeToDocument(newSettings) // Aplica na hora para feedback instantâneo
+  // 3. Salvar mudanças
+  const handleSave = async (explicitSettings = null) => {
+    if (!settings && !explicitSettings) return
+    setSaving(true)
+    
+    const finalSettings = explicitSettings || { 
+      ...settings, 
+      displayName: localDisplayName, 
+      partnerNick: localPartnerNick 
+    }
+    
+    setSettings(finalSettings)
+    applyThemeToDocument(finalSettings)
 
     // Persistência Local
     const resolvedKey = getThemeSettingsKey(user?.uid)
-    window.localStorage.setItem(resolvedKey, JSON.stringify(newSettings))
+    window.localStorage.setItem(resolvedKey, JSON.stringify(finalSettings))
 
-    // Persistência no Firebase (Sincroniza com o Parceiro)
+    // Persistência no Firebase
     if (db && user?.uid) {
       try {
         const userRef = doc(db, 'users', user.uid)
-        await setDoc(userRef, { settings: newSettings }, { merge: true })
+        await setDoc(userRef, { settings: finalSettings }, { merge: true })
         
-        // Se estiver em um casal, salva na sala para o parceiro receber o tema também
+        // Se estiver em um casal, salva na sala apenas os temas e configurações compartilhadas
         if (profile?.coupleId) {
           const coupleRef = doc(db, 'couples', profile.coupleId)
-          await setDoc(coupleRef, { settings: newSettings }, { merge: true })
+          // Não salvamos displayName/partnerNick no coupleRef pois são individuais
+          const { displayName, partnerNick, ...sharedSettings } = finalSettings
+          await setDoc(coupleRef, { settings: sharedSettings }, { merge: true })
         }
         
         setSavedAt(new Date().toLocaleTimeString())
       } catch (err) {
-        console.error('Erro ao sincronizar:', err)
+        console.error('Erro ao salvar:', err)
+        alert('Erro ao salvar. Tente novamente.')
       }
     }
+    setSaving(false)
+    if (!explicitSettings) alert('Configurações salvas! ✨')
+  }
+
+  const updateSetting = (key, value) => {
+    if (!settings) return
+    const newSettings = { ...settings, [key]: value }
+    setSettings(newSettings)
+    applyThemeToDocument(newSettings)
+    
+    // Para toggles e cores, salvamos automaticamente ou esperamos o botão? 
+    // O usuário pediu botão de salvar, então vamos manter no estado local e salvar no handleSave
   }
 
   if (loading || !settings) {
@@ -187,9 +216,18 @@ export default function SettingsPage() {
               Ajuste tema, cores, intensidade visual e preferências do app para deixar o OnlyUs com a identidade do casal.
             </p>
           </div>
-          <div className="soft-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Última gravação</p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">{savedAt || 'Salvamento automático ativo'}</p>
+          <div className="soft-card p-5 flex flex-col justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Ações</p>
+              <p className="mt-2 text-xs text-slate-400">{savedAt ? `Salvo às ${savedAt}` : 'Alterações pendentes'}</p>
+            </div>
+            <button 
+              onClick={() => handleSave()}
+              disabled={saving}
+              className="mt-4 w-full py-3 bg-[var(--ou-accent)] text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {saving ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
           </div>
         </section>
 
@@ -447,6 +485,41 @@ export default function SettingsPage() {
             </div>
 
             <div className="soft-card p-6 sm:p-7">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 mb-6">Notificações</p>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10">
+                  <div>
+                    <p className="text-sm font-bold dark:text-white">Permissão do Navegador</p>
+                    <p className="text-xs text-slate-500">Necessário para receber alertas push</p>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!('Notification' in window)) return alert('Não suportado')
+                      const permission = await Notification.requestPermission()
+                      if (permission === 'granted') alert('Ativado! 🎉')
+                    }}
+                    className="px-4 py-2 bg-slate-200 dark:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest"
+                  >
+                    Verificar
+                  </button>
+                </div>
+
+                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={settings.pushNotifications}
+                    onChange={(e) => updateSetting('pushNotifications', e.target.checked)}
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-white">Alertas Push (App)</span>
+                    <span className="mt-1 block text-xs text-slate-500">Avisar quando o Amor interagir ou postar</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="soft-card p-6 sm:p-7">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Identidade do Casal</p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div>
@@ -454,8 +527,8 @@ export default function SettingsPage() {
                   <input
                     className="field-input mt-1"
                     placeholder="Como você quer ser chamado?"
-                    value={settings.displayName || ''}
-                    onChange={(e) => updateSetting('displayName', e.target.value)}
+                    value={localDisplayName}
+                    onChange={(e) => setLocalDisplayName(e.target.value)}
                   />
                 </div>
                 <div>
@@ -463,8 +536,8 @@ export default function SettingsPage() {
                   <input
                     className="field-input mt-1"
                     placeholder="Ex: Amor, Vida, Princesa..."
-                    value={settings.partnerNick || ''}
-                    onChange={(e) => updateSetting('partnerNick', e.target.value)}
+                    value={localPartnerNick}
+                    onChange={(e) => setLocalPartnerNick(e.target.value)}
                   />
                 </div>
               </div>

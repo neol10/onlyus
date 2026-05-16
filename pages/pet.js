@@ -6,10 +6,11 @@ import { db } from '../src/firebase/firebaseClient'
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 
 const PET_TYPES = {
-  cat: { img: '/pets/cat.png', color: 'from-orange-400 to-red-500', name: 'Gatinho' },
-  dog: { img: '/pets/dog.png', color: 'from-blue-400 to-indigo-500', name: 'Cachorrinho' },
-  rabbit: { img: '/pets/rabbit.png', color: 'from-pink-400 to-rose-500', name: 'Coelhinho' },
-  bear: { img: '/pets/bear.png', color: 'from-amber-600 to-orange-800', name: 'Ursinho' }
+  cat: { emoji: '🐱', color: 'from-orange-400 to-red-500', name: 'Gatinho' },
+  dog: { emoji: '🐶', color: 'from-blue-400 to-indigo-500', name: 'Cachorrinho' },
+  rabbit: { emoji: '🐰', color: 'from-pink-400 to-rose-500', name: 'Coelhinho' },
+  bear: { emoji: '🐻', color: 'from-amber-600 to-orange-800', name: 'Ursinho' },
+  panda: { emoji: '🐼', color: 'from-slate-400 to-slate-600', name: 'Panda' }
 }
 
 export default function PetPage() {
@@ -25,6 +26,9 @@ export default function PetPage() {
     const unsub = onSnapshot(coupleRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data()
+        const now = new Date()
+        const todayKey = now.toDateString() // "Fri May 16 2026"
+        
         const pet = { 
           type: 'cat', 
           name: 'Bixinho', 
@@ -33,19 +37,24 @@ export default function PetPage() {
           hunger: 100, 
           love: 100, 
           streak: 0,
-          lastAction: Date.now(),
-          interactions: {},
+          lastMissionDate: '', // Data da última vez que a missão dupla foi completa
+          interactions: {}, // { [date]: { [uid]: 'feed'|'love' } }
           ...(data.pet || {})
         }
 
-        // Lógica de Streak (Foguinho)
-        const now = Date.now()
-        const oneDay = 24 * 60 * 60 * 1000
-        const timeSinceLast = now - (pet.lastAction || now)
+        // Lógica de Reset à Meia-Noite (Verifica se ontem a missão foi completa)
+        const yesterday = new Date(now)
+        yesterday.setDate(now.getDate() - 1)
+        const yesterdayKey = yesterday.toDateString()
 
-        if (timeSinceLast > oneDay) {
-          pet.streak = 0
-          pet.hunger = Math.max(0, pet.hunger - 20)
+        // Se hoje é um novo dia e a missão de ontem não foi completa
+        if (pet.lastMissionDate !== todayKey && pet.lastMissionDate !== yesterdayKey && pet.lastMissionDate !== '') {
+          // Só reseta se já tinha um streak e passou o prazo
+          if (pet.streak > 0) {
+            pet.streak = 0
+            pet.hunger = 30
+            pet.love = 30
+          }
         }
 
         setPetData(pet)
@@ -54,20 +63,10 @@ export default function PetPage() {
     return () => unsub()
   }, [profile?.coupleId])
 
-  const updatePet = async (updates) => {
+  const updatePet = async (newPet) => {
     if (!profile?.coupleId || actionLoading) return
     setActionLoading(true)
-    const newPet = { ...petData, ...updates, lastAction: Date.now() }
     
-    // Sistema de Exp
-    if (updates.hunger || updates.love) {
-      newPet.exp += 10
-      if (newPet.exp >= 100) {
-        newPet.level += 1
-        newPet.exp = 0
-      }
-    }
-
     const coupleRef = doc(db, 'couples', profile.coupleId)
     await setDoc(coupleRef, { pet: newPet }, { merge: true })
     setActionLoading(false)
@@ -75,30 +74,70 @@ export default function PetPage() {
 
   const handleAction = async (type) => {
     const today = new Date().toDateString()
-    const userInteractions = petData.interactions?.[user.uid] || {}
+    const dailyInteractions = petData.interactions?.[today] || {}
     
-    if (userInteractions.lastDate === today && userInteractions[type]) {
-      alert(`Você já deu ${type === 'feed' ? 'comida' : 'carinho'} hoje! Deixe o Amor fazer a parte dele(a) ❤️`)
+    // 1. Verifica se o usuário já fez alguma coisa hoje
+    if (dailyInteractions[user.uid]) {
+      alert(`Você já fez sua parte hoje! Espere o seu Amor ${dailyInteractions[user.uid] === 'feed' ? 'dar carinho' : 'alimentar'} o bixinho. ❤️`)
       return
     }
 
-    const updates = {
-      interactions: {
-        ...petData.interactions,
-        [user.uid]: { ...userInteractions, [type]: true, lastDate: today }
-      }
+    // 2. Verifica se a ação que ele quer fazer já foi feita por alguém
+    const alreadyDone = Object.values(dailyInteractions).includes(type)
+    if (alreadyDone) {
+      alert(`O bixinho já recebeu ${type === 'feed' ? 'comida' : 'carinho'} hoje! Você precisa fazer a outra tarefa. ❤️`)
+      return
     }
 
-    if (type === 'feed') {
-      updates.hunger = Math.min(petData.hunger + 20, 100)
-      updates.streak = petData.streak + 1
-    } else {
-      updates.love = Math.min(petData.love + 20, 100)
+    // 3. Aplica a ação
+    const newInteractions = { ...petData.interactions, [today]: { ...dailyInteractions, [user.uid]: type } }
+    const updates = { 
+      interactions: newInteractions,
+      exp: petData.exp + 10
+    }
+
+    if (type === 'feed') updates.hunger = Math.min(petData.hunger + 30, 100)
+    else {
+      updates.love = Math.min(petData.love + 30, 100)
       setShowHearts(true)
       setTimeout(() => setShowHearts(false), 2000)
     }
 
-    await updatePet(updates)
+    // Level up
+    if (updates.exp >= 100) {
+      updates.level = petData.level + 1
+      updates.exp = 0
+    }
+
+    // 4. Verifica se a missão dupla foi completa hoje
+    const todayInteractions = newInteractions[today]
+    const uids = Object.keys(todayInteractions)
+    const actions = Object.values(todayInteractions)
+    
+    if (uids.length === 2 && actions.includes('feed') && actions.includes('love')) {
+      updates.streak = petData.streak + 1
+      updates.lastMissionDate = today
+      // Notificação de Streak!
+      const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+      await setDoc(notifRef, {
+        from: 'system',
+        message: `🔥 INCRÍVEL! Missão completa! Streak de ${updates.streak} dias!`,
+        timestamp: Date.now(),
+        type: 'streak'
+      })
+    }
+
+    const finalPet = { ...petData, ...updates }
+    await updatePet(finalPet)
+
+    // Notificação de ação normal
+    const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+    await setDoc(notifRef, {
+      from: user.uid,
+      message: `${profile.displayName || 'Seu Amor'} acabou de ${type === 'feed' ? 'alimentar' : 'dar carinho'} o bixinho! Agora é sua vez. 🐾`,
+      timestamp: Date.now(),
+      type: 'pet'
+    })
   }
 
   if (loading || !petData || !user) {
@@ -114,34 +153,32 @@ export default function PetPage() {
     )
   }
 
-  const interactions = petData.interactions || {}
-  const partnerId = profile?.coupleId ? Object.keys(interactions).find(id => id !== user.uid) : null
-  const partnerInteractions = partnerId ? interactions[partnerId] : null
   const today = new Date().toDateString()
+  const dailyInteractions = petData.interactions?.[today] || {}
   
-  const userToday = interactions[user.uid] || {}
-  const partnerToday = partnerInteractions || {}
+  const userAction = dailyInteractions[user.uid]
+  const partnerId = profile?.coupleId ? Object.keys(dailyInteractions).find(id => id !== user.uid) : null
+  const partnerAction = partnerId ? dailyInteractions[partnerId] : null
 
-  const bothFed = (userToday.feed && userToday.lastDate === today) && 
-                  (partnerToday.feed && partnerToday.lastDate === today)
+  const missionComplete = Object.values(dailyInteractions).includes('feed') && Object.values(dailyInteractions).includes('love')
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <NavBar />
       
-      <main className="max-w-xl mx-auto px-4 pt-10">
+      <main className="max-w-2xl mx-auto px-4 pt-10">
         {/* Status Topo */}
-        <div className="flex justify-between items-center mb-8 bg-white dark:bg-white/5 p-4 rounded-3xl shadow-sm border border-slate-200 dark:border-white/10">
+        <div className="flex flex-wrap justify-between items-center gap-4 mb-8 bg-white dark:bg-white/5 p-4 rounded-3xl shadow-sm border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-2xl">🔥</div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-xl sm:text-2xl">🔥</div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">Sequência</p>
-              <p className="text-xl font-bold dark:text-white">{petData.streak} Dias</p>
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-orange-500">Sequência</p>
+              <p className="text-lg sm:text-xl font-bold dark:text-white">{petData.streak} Dias</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Nível {petData.level}</p>
-            <div className="w-32 h-2 bg-slate-100 dark:bg-white/10 rounded-full mt-1 overflow-hidden">
+          <div className="text-right flex-1 sm:flex-none">
+            <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-500">Nível {petData.level}</p>
+            <div className="w-full sm:w-32 h-2 bg-slate-100 dark:bg-white/10 rounded-full mt-1 overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: `${petData.exp}%` }}
@@ -180,20 +217,11 @@ export default function PetPage() {
           <motion.div
             key={petData.type + petData.level}
             animate={{ 
-              // 1. Respiração Orgânica (Squash & Stretch)
               scaleX: [1, 1.03, 1],
               scaleY: [1, 0.97, 1],
-              
-              // 2. Levitação com balanço
-              y: petData.hunger < 30 
-                ? [0, 2, 0, 2, 0] // Tremor
-                : [0, -20, 0],    // Flutuação
-              
-              // 3. Inclinação de peso
-              rotate: petData.hunger < 20 ? [-3, 3, -3, 3, 0] : [0, -2, 2, 0],
-              
-              // 4. Brilho de felicidade
-              filter: showHearts ? 'brightness(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.5))' : 'brightness(1)'
+              y: petData.hunger < 30 ? [0, 2, 0, 2, 0] : [0, -15, 0],
+              rotate: petData.hunger < 20 ? [-3, 3, -3, 3, 0] : [0, -1, 1, 0],
+              filter: showHearts ? 'brightness(1.1) drop-shadow(0 0 15px rgba(255,255,255,0.4))' : 'brightness(1)'
             }}
             whileTap={{ scale: 0.9, rotate: -5, y: 10 }} 
             transition={{ 
@@ -203,33 +231,38 @@ export default function PetPage() {
             }}
             className="relative z-10 cursor-pointer select-none"
           >
-            <img 
-              src={PET_TYPES[petData.type || 'cat']?.img} 
-              alt="Pet"
-              className="w-64 h-64 sm:w-80 sm:h-80 object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)]"
-            />
+            <div className="relative">
+              <span className="text-[120px] sm:text-[180px] md:text-[220px] filter drop-shadow-2xl select-none">
+                {PET_TYPES[petData.type || 'cat']?.emoji}
+              </span>
+              
+              {/* Overlay de sono se estiver de madrugada */}
+              {(new Date().getHours() < 6 || new Date().getHours() > 22) && (
+                <div className="absolute -top-4 -right-4 text-3xl animate-bounce">zzz...</div>
+              )}
+            </div>
 
             {/* Balão de Fome Premium */}
             {petData.hunger < 40 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="absolute top-10 -right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white/20"
+                className="absolute top-5 -right-2 bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-xl border border-white/20"
               >
-                <span className="text-3xl">🍲</span>
+                <span className="text-xl sm:text-2xl">🍲</span>
               </motion.div>
             )}
           </motion.div>
 
-          {/* Sombra 3D Perspectiva */}
+          {/* Sombra 3D Adaptativa */}
           <motion.div 
             animate={{ 
-              scale: [1, 1.3, 1],
+              scale: [1, 1.2, 1],
               opacity: [0.15, 0.05, 0.15],
-              width: [180, 220, 180]
+              width: [140, 180, 140]
             }}
             transition={{ repeat: Infinity, duration: 4 }}
-            className="h-8 bg-black/30 blur-2xl rounded-[100%] mt-[-40px]"
+            className="h-6 bg-black/30 blur-xl rounded-[100%] mt-[-30px] sm:mt-[-40px]"
           ></motion.div>
         </div>
 
@@ -239,58 +272,72 @@ export default function PetPage() {
             type="text"
             value={petData.name}
             onChange={e => updatePet({ name: e.target.value })}
-            className="bg-transparent text-4xl font-black text-center text-slate-900 dark:text-white focus:outline-none mb-2"
+            className="bg-transparent text-3xl sm:text-4xl font-black text-center text-slate-900 dark:text-white focus:outline-none mb-2 w-full max-w-xs"
           />
-          <div className="flex justify-center gap-4 mt-6">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-6">
             {Object.entries(PET_TYPES).map(([id, info]) => (
               <button 
                 key={id}
-                onClick={() => updatePet({ type: id })}
-                className={`w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center transition-all ${petData.type === id ? 'bg-white shadow-xl scale-125 ring-4 ring-indigo-500' : 'bg-slate-200 dark:bg-white/5 opacity-40 grayscale hover:grayscale-0 hover:opacity-100'}`}
+                onClick={() => updatePet({ ...petData, type: id })}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden flex items-center justify-center transition-all text-2xl ${petData.type === id ? 'bg-white shadow-xl scale-110 sm:scale-125 ring-4 ring-indigo-500' : 'bg-slate-200 dark:bg-white/5 opacity-40 grayscale hover:grayscale-0 hover:opacity-100'}`}
               >
-                <img src={info.img} className="w-10 h-10 object-contain" />
+                {info.emoji}
               </button>
             ))}
           </div>
         </div>
 
         {/* Ações de Cuidado */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="soft-card p-6 flex flex-col items-center gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="soft-card p-5 sm:p-6 flex flex-col items-center gap-4">
              <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-                <motion.div animate={{ width: `${petData.hunger}%` }} className="h-full bg-amber-500" />
+                <motion.div animate={{ width: `${petData.hunger}%` }} className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
              </div>
              <button 
               onClick={() => handleAction('feed')}
-              className="w-full py-4 rounded-2xl bg-amber-500 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-transform"
+              disabled={userAction !== undefined || partnerAction === 'feed'}
+              className="w-full py-4 rounded-2xl bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all hover:brightness-110 disabled:opacity-50 disabled:grayscale"
              >
                Alimentar 🐟
              </button>
-             <p className="text-[10px] font-bold text-slate-400">
-               {userToday.feed && userToday.lastDate === today ? '✅ Você já alimentou' : '⏳ Sua vez'}
+              <p className="text-[10px] font-bold text-slate-400 text-center flex items-center gap-2">
+               {userAction === 'feed' ? (
+                 <><span className="text-emerald-500">✅</span> Você alimentou</>
+               ) : partnerAction === 'feed' ? (
+                 <><span className="text-indigo-500">👤</span> O Amor alimentou</>
+               ) : (
+                 <><span className="text-amber-500 animate-pulse">⏳</span> Pendente</>
+               )}
              </p>
           </div>
 
-          <div className="soft-card p-6 flex flex-col items-center gap-4">
+          <div className="soft-card p-5 sm:p-6 flex flex-col items-center gap-4">
              <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-                <motion.div animate={{ width: `${petData.love}%` }} className="h-full bg-pink-500" />
+                <motion.div animate={{ width: `${petData.love}%` }} className="h-full bg-pink-50 shadow-[0_0_10px_rgba(236,72,153,0.5)]" />
              </div>
              <button 
               onClick={() => handleAction('love')}
-              className="w-full py-4 rounded-2xl bg-pink-500 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-transform"
+              disabled={userAction === 'feed' || partnerAction === 'love'}
+              className="w-full py-4 rounded-2xl bg-pink-500 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-all hover:brightness-110 disabled:opacity-50 disabled:grayscale"
              >
-               Carinho 👋
+               Dar Carinho 👋
              </button>
-             <p className="text-[10px] font-bold text-slate-400">
-               {userToday.love && userToday.lastDate === today ? '✅ Você já deu carinho' : '⏳ Sua vez'}
+             <p className="text-[10px] font-bold text-slate-400 text-center flex items-center gap-2">
+               {userAction === 'love' ? (
+                 <><span className="text-emerald-500">✅</span> Você deu carinho</>
+               ) : partnerAction === 'love' ? (
+                 <><span className="text-indigo-500">👤</span> O Amor deu carinho</>
+               ) : (
+                 <><span className="text-pink-500 animate-pulse">⏳</span> Pendente</>
+               )}
              </p>
           </div>
         </div>
 
         {/* Alerta de Missão */}
-        <div className={`mt-6 p-4 rounded-2xl border text-center transition-colors ${bothFed ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-white/5 border-transparent text-slate-500'}`}>
+        <div className={`mt-6 p-4 rounded-2xl border text-center transition-colors ${missionComplete ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-white/5 border-transparent text-slate-500'}`}>
            <p className="text-xs font-bold uppercase tracking-widest">
-             {bothFed ? '✨ Missão Diária Completa! +1 Foguinho' : 'Falta um de vocês cuidar para ganhar o foguinho!'}
+             {missionComplete ? '✨ Missão Diária Completa! Streak Mantido!' : 'Um alimenta, o outro acaricia! Façam isso antes da meia-noite.'}
            </p>
         </div>
       </main>

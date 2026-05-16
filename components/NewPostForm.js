@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { storage, db } from '../src/firebase/firebaseClient'
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore'
 import { useAuth } from '../src/context/AuthContext'
 
 export default function NewPostForm() {
@@ -63,6 +63,17 @@ export default function NewPostForm() {
             notifyPartner: notifyPartner,
           })
 
+          // Enviar notificação se marcado
+          if (notifyPartner) {
+            const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+            await setDoc(notifRef, {
+              from: user.uid,
+              message: `${profile.displayName || 'Seu Amor'} publicou uma nova memória! 📸`,
+              timestamp: Date.now(),
+              type: 'post'
+            })
+          }
+
           setCaption('')
           setFile(null)
           setProgress(0)
@@ -108,34 +119,43 @@ export default function NewPostForm() {
         className="field-input mb-3"
       />
       
-      <div className="mb-4 flex flex-wrap gap-4">
-        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 transition hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">
-          <input 
-            type="checkbox" 
-            checked={isBlurred} 
-            onChange={e => setIsBlurred(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
-          />
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Desfocar Foto</span>
-        </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 transition hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">
-          <input 
-            type="checkbox" 
-            checked={isLocked} 
-            onChange={e => setIsLocked(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
-          />
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Exigir PIN</span>
-        </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-pink-200 bg-pink-50/30 px-3 py-2 transition hover:bg-pink-50 dark:border-pink-500/20 dark:bg-pink-500/5">
+      <div className="mb-4 space-y-3">
+        <label className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl border-2 border-pink-100 bg-pink-50/50 p-4 transition hover:bg-pink-100 dark:border-pink-500/10 dark:bg-pink-500/5 dark:hover:bg-pink-500/10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-500 text-white shadow-lg shadow-pink-500/20">🔔</div>
+            <div>
+              <p className="text-xs font-bold text-pink-700 dark:text-pink-400">Notificar {profile?.settings?.partnerNick || 'o Amor'}</p>
+              <p className="text-[10px] text-pink-600/70 dark:text-pink-400/50">Enviar alerta push para o parceiro ver agora</p>
+            </div>
+          </div>
           <input 
             type="checkbox" 
             checked={notifyPartner} 
             onChange={e => setNotifyPartner(e.target.checked)}
-            className="h-4 w-4 rounded border-pink-300 text-pink-600 focus:ring-pink-500" 
+            className="h-5 w-5 rounded-full border-pink-300 text-pink-600 focus:ring-pink-500 transition-all cursor-pointer" 
           />
-          <span className="text-xs font-bold text-pink-700 dark:text-pink-400">Marcar {profile?.settings?.partnerNick || 'o Amor'} 🔔</span>
         </label>
+
+        <div className="flex gap-2">
+          <label className="flex-1 flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 transition hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">
+            <input 
+              type="checkbox" 
+              checked={isBlurred} 
+              onChange={e => setIsBlurred(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
+            />
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Desfocar Foto</span>
+          </label>
+          <label className="flex-1 flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 transition hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">
+            <input 
+              type="checkbox" 
+              checked={isLocked} 
+              onChange={e => setIsLocked(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
+            />
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Exigir PIN</span>
+          </label>
+        </div>
       </div>
       <div className="flex items-center gap-3">
         <button className="primary-button disabled:cursor-not-allowed disabled:opacity-60" disabled={uploading}>

@@ -9,7 +9,7 @@ import CollabRoom from '../components/CollabRoom'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useAuth } from '../src/context/AuthContext'
-import { collection, query, orderBy, onSnapshot, doc, setDoc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../src/firebase/firebaseClient'
 
 export default function Home() {
@@ -45,6 +45,7 @@ export default function Home() {
           relationshipDate: data.relationshipDate || '',
           myMood: data.moods?.[user.uid] || '🥰',
           partnerMood: data.moods?.[partnerId] || '🥰',
+          partnerNick: profile?.settings?.partnerNick || 'O Amor',
           partnerId: partnerId,
           pinOnPosts: data.settings?.pinOnPosts || false,
           blurPhotos: data.settings?.blurPhotos || false,
@@ -54,26 +55,59 @@ export default function Home() {
       }
     })
 
-    return () => { unsubPosts(); unsubCouple() }
+    // Escuta Notificações em Tempo Real
+    const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+    const unsubNotif = onSnapshot(notifRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const notif = docSnap.data()
+        // Só notifica se for do parceiro e for recente (últimos 30s)
+        if (notif.from !== user.uid && Date.now() - notif.timestamp < 30000) {
+          if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('OnlyUs ❤️', { body: notif.message, icon: '/logo.png' })
+          }
+        }
+      }
+    })
+
+    return () => { unsubPosts(); unsubCouple(); unsubNotif() }
   }, [user, profile?.coupleId, loading])
+
+  const sendLoveNotification = async () => {
+    if (!profile?.coupleId || !user) return
+    const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+    await setDoc(notifRef, {
+      from: user.uid,
+      message: `${profile.displayName || 'Seu Amor'} te mandou um carinho! ❤️`,
+      timestamp: Date.now(),
+      type: 'love'
+    })
+    alert('Carinho enviado! ❤️')
+  }
 
   const saveCoupleData = async (newData) => {
     if (!user || !db || !profile?.coupleId) return
-    
     const coupleRef = doc(db, 'couples', profile.coupleId)
     
-    // Se mudou o humor, salva no mapa de humores por usuário
     if (newData.myMood) {
-      await setDoc(coupleRef, { 
-        moods: { [user.uid]: newData.myMood } 
-      }, { merge: true })
+      // Usar dot notation para não sobrescrever o humor do parceiro
+      await updateDoc(coupleRef, {
+        [`moods.${user.uid}`]: newData.myMood
+      })
+
+      // Enviar notificação de humor
+      const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+      await setDoc(notifRef, {
+        from: user.uid,
+        message: `${profile.displayName || 'Seu Amor'} atualizou o humor para: ${newData.myMood}`,
+        timestamp: Date.now(),
+        type: 'mood'
+      })
     }
     
-    // Se mudou a data, salva o campo global
     if (newData.relationshipDate !== undefined) {
-      await setDoc(coupleRef, { 
+      await updateDoc(coupleRef, { 
         relationshipDate: newData.relationshipDate 
-      }, { merge: true })
+      })
     }
   }
 
@@ -165,7 +199,7 @@ export default function Home() {
                 </div>
                 <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
                 <div className="text-right">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">O Amor</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">{coupleData.partnerNick}</p>
                   <span className="text-3xl drop-shadow-md">{coupleData.partnerMood}</span>
                 </div>
               </div>

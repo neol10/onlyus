@@ -51,7 +51,8 @@ export default function CollabRoom() {
         createdAt: Date.now(),
         partnerA: user.uid,
         partnerB: partnerId,
-        settings: { relationshipDate: '', myMood: '🥰', partnerMood: '🥰' }
+        moods: { [user.uid]: '🥰', [partnerId]: '🥰' },
+        settings: { relationshipDate: '', theme: 'Aurora' }
       }
       
       await setDoc(doc(db, 'couples', newCoupleId), newCoupleData)
