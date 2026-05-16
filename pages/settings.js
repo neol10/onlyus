@@ -22,6 +22,10 @@ const DEFAULT_SETTINGS = {
   autoMemories: true,
   blurPhotos: false,
   pinOnPosts: false,
+  pinEnabled: false,
+  pinCode: '',
+  pinPhoto: '',
+  biometricsEnabled: false,
   displayName: '',
   partnerNick: 'Amor'
 }
@@ -110,7 +114,7 @@ export default function SettingsPage() {
 
     // Se já temos as configurações no perfil do Firestore, usamos elas
     if (profile.settings) {
-      setSettings(profile.settings)
+      setSettings({ ...DEFAULT_SETTINGS, ...profile.settings })
       setLocalDisplayName(profile.settings.displayName || '')
       setLocalPartnerNick(profile.settings.partnerNick || 'Amor')
       applyThemeToDocument(profile.settings)
@@ -118,7 +122,7 @@ export default function SettingsPage() {
       // Fallback para o que estiver no navegador
       const resolvedKey = getThemeSettingsKey(user?.uid)
       const persisted = readThemeSettings(resolvedKey)
-      setSettings(persisted)
+      setSettings({ ...DEFAULT_SETTINGS, ...persisted })
       setLocalDisplayName(persisted.displayName || '')
       setLocalPartnerNick(persisted.partnerNick || 'Amor')
       applyThemeToDocument(persisted)
@@ -167,14 +171,51 @@ export default function SettingsPage() {
     if (!explicitSettings) alert('Configurações salvas! ✨')
   }
 
+  // Função para Ativar Biometria (WebAuthn)
+  const handleEnableBiometrics = async () => {
+    try {
+      if (!window.PublicKeyCredential) {
+        alert('Seu dispositivo não suporta biometria no navegador.')
+        return
+      }
+
+      const challenge = new Uint8Array(32)
+      window.crypto.getRandomValues(challenge)
+
+      const createCredentialDefaultOptions = {
+        challenge,
+        rp: { name: "OnlyUs", id: window.location.hostname },
+        user: {
+          id: Uint8Array.from(user.uid, c => c.charCodeAt(0)),
+          name: user.email,
+          displayName: profile.displayName || user.email,
+        },
+        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+        timeout: 60000,
+        attestation: "none"
+      }
+
+      const credential = await navigator.credentials.create({
+        publicKey: createCredentialDefaultOptions
+      })
+
+      if (credential) {
+        updateSetting('biometricsEnabled', true)
+        alert('Biometria configurada com sucesso! 🛡️')
+        handleSave({ ...settings, biometricsEnabled: true })
+      }
+    } catch (err) {
+      console.error('Erro biometria:', err)
+      alert('Não foi possível configurar a biometria. Verifique se seu dispositivo tem FaceID/Digital ativo.')
+    }
+  }
+
   const updateSetting = (key, value) => {
     if (!settings) return
     const newSettings = { ...settings, [key]: value }
     setSettings(newSettings)
     applyThemeToDocument(newSettings)
-    
-    // Para toggles e cores, salvamos automaticamente ou esperamos o botão? 
-    // O usuário pediu botão de salvar, então vamos manter no estado local e salvar no handleSave
   }
 
   if (loading || !settings) {
@@ -197,10 +238,6 @@ export default function SettingsPage() {
   const previewTextClass = settings.uiMode === 'Escuro' ? 'text-slate-100' : 'text-slate-900'
   const previewMutedClass = settings.uiMode === 'Escuro' ? 'text-slate-400' : 'text-slate-500'
   const previewTileBg = settings.uiMode === 'Escuro' ? 'rgba(15,23,42,0.56)' : 'rgba(255,255,255,0.5)'
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>
-  }
 
   return (
     <div className="min-h-screen">
@@ -323,92 +360,6 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className="field-label">Cor principal</label>
-                  <div className="grid gap-2 sm:grid-cols-[110px_1fr]">
-                    <input
-                      type="color"
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-transparent"
-                      value={settings.primaryHex || '#60a5fa'}
-                      onChange={(e) => {
-                        updateSetting('primary', 'Personalizada')
-                        updateSetting('primaryHex', e.target.value)
-                      }}
-                    />
-                    <input
-                      type="text"
-                      className="field-input"
-                      placeholder="#60a5fa"
-                      value={settings.primaryHex || '#60a5fa'}
-                      onChange={(e) => {
-                        updateSetting('primary', 'Personalizada')
-                        updateSetting('primaryHex', e.target.value)
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="field-label">Par de cores (principal + secundária)</label>
-                  <div className="grid gap-2 sm:grid-cols-[110px_110px_1fr]">
-                    <input
-                      type="color"
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-transparent"
-                      value={settings.primaryHex || '#60a5fa'}
-                      onChange={(e) => {
-                        updateSetting('primary', 'Personalizada')
-                        updateSetting('primaryHex', e.target.value)
-                      }}
-                    />
-                    <input
-                      type="color"
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-transparent"
-                      value={settings.secondaryHex || '#8b5cf6'}
-                      onChange={(e) => {
-                        updateSetting('secondary', 'Personalizada')
-                        updateSetting('secondaryHex', e.target.value)
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => {
-                        const nextPrimary = settings.secondaryHex || '#8b5cf6'
-                        const nextSecondary = settings.primaryHex || '#60a5fa'
-                        updateSetting('primary', 'Personalizada')
-                        updateSetting('secondary', 'Personalizada')
-                        updateSetting('primaryHex', nextPrimary)
-                        updateSetting('secondaryHex', nextSecondary)
-                      }}
-                    >
-                      Inverter par
-                    </button>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {PAIR_PRESETS.map((preset) => {
-                      const isSelected = settings.primaryHex?.toLowerCase() === preset.primary && settings.secondaryHex?.toLowerCase() === preset.secondary
-                      return (
-                        <button
-                          key={preset.name}
-                          type="button"
-                          onClick={() => {
-                            updateSetting('primary', 'Personalizada')
-                            updateSetting('secondary', 'Personalizada')
-                            updateSetting('primaryHex', preset.primary)
-                            updateSetting('secondaryHex', preset.secondary)
-                          }}
-                          className="rounded-xl border px-2.5 py-2 text-left text-xs font-semibold transition hover:-translate-y-0.5"
-                          style={isSelected ? SELECTED_STYLE : { borderColor: 'var(--ou-border-soft, rgba(148,163,184,0.35))' }}
-                        >
-                          <span className="mb-1 flex items-center gap-2">
-                            <span className="h-3 w-3 rounded-full" style={{ background: preset.primary }} />
-                            <span className="h-3 w-3 rounded-full" style={{ background: preset.secondary }} />
-                          </span>
-                          {preset.name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
                 <div className="sm:col-span-2">
                   <label className="field-label">Cor das superfícies</label>
                   <div className="grid gap-2 sm:grid-cols-[110px_1fr]">
@@ -434,88 +385,29 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="field-label">Cor secundária</label>
-                  <div className="grid gap-2 sm:grid-cols-[110px_1fr]">
-                    <input
-                      type="color"
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-transparent"
-                      value={settings.secondaryHex || '#8b5cf6'}
-                      onChange={(e) => {
-                        updateSetting('secondary', 'Personalizada')
-                        updateSetting('secondaryHex', e.target.value)
-                      }}
-                    />
-                    <input
-                      type="text"
-                      className="field-input"
-                      placeholder="#8b5cf6"
-                      value={settings.secondaryHex || '#8b5cf6'}
-                      onChange={(e) => {
-                        updateSetting('secondary', 'Personalizada')
-                        updateSetting('secondaryHex', e.target.value)
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="field-label">Intensidade do fundo</label>
-                  <input
-                    className="field-input"
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={settings.backgroundIntensity}
-                    onChange={(e) => updateSetting('backgroundIntensity', Number(e.target.value))}
-                  />
-                  <p className="mt-2 text-xs text-slate-500">{settings.backgroundIntensity}%</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="field-label">Intensidade das animações</label>
-                  <input
-                    className="field-input"
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={settings.motionIntensity}
-                    onChange={(e) => updateSetting('motionIntensity', Number(e.target.value))}
-                  />
-                  <p className="mt-2 text-xs text-slate-500">{settings.motionIntensity}%</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="soft-card p-6 sm:p-7">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 mb-6">Notificações</p>
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10">
-                  <div>
-                    <p className="text-sm font-bold dark:text-white">Permissão do Navegador</p>
-                    <p className="text-xs text-slate-500">Necessário para receber alertas push</p>
-                  </div>
-                  <button 
-                    onClick={async () => {
-                      if (!('Notification' in window)) return alert('Não suportado')
-                      const permission = await Notification.requestPermission()
-                      if (permission === 'granted') alert('Ativado! 🎉')
-                    }}
-                    className="px-4 py-2 bg-slate-200 dark:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest"
-                  >
-                    Verificar
-                  </button>
-                </div>
-
-                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    checked={settings.pushNotifications}
-                    onChange={(e) => updateSetting('pushNotifications', e.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-sm font-bold text-slate-900 dark:text-white">Alertas Push (App)</span>
-                    <span className="mt-1 block text-xs text-slate-500">Avisar quando o Amor interagir ou postar</span>
-                  </span>
-                </label>
+                   <label className="field-label">Intensidade do fundo</label>
+                   <input
+                     className="field-input"
+                     type="range"
+                     min="0"
+                     max="100"
+                     value={settings.backgroundIntensity}
+                     onChange={(e) => updateSetting('backgroundIntensity', Number(e.target.value))}
+                   />
+                   <p className="mt-2 text-xs text-slate-500">{settings.backgroundIntensity}%</p>
+                 </div>
+                 <div>
+                   <label className="field-label">Intensidade das animações</label>
+                   <input
+                     className="field-input"
+                     type="range"
+                     min="0"
+                     max="100"
+                     value={settings.motionIntensity}
+                     onChange={(e) => updateSetting('motionIntensity', Number(e.target.value))}
+                   />
+                   <p className="mt-2 text-xs text-slate-500">{settings.motionIntensity}%</p>
+                 </div>
               </div>
             </div>
 
@@ -541,73 +433,38 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-
-              {profile?.coupleId && (
-                <div className="mt-8 pt-6 border-t border-rose-100 dark:border-rose-500/10">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3">Zona de Perigo</p>
-                  <button 
-                    onClick={async () => {
-                      if (confirm('Tem certeza que deseja desvincular seu parceiro? Isso não apagará suas memórias, mas vocês não estarão mais conectados.')) {
-                        try {
-                          const userRef = doc(db, 'users', user.uid)
-                          await updateDoc(userRef, { coupleId: null })
-                          // Nota: O parceiro precisará desvincular do lado dele ou o admin limpa
-                          window.location.href = '/'
-                        } catch (e) {
-                          alert('Erro ao desvincular.')
-                        }
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    Desvincular Parceiro
-                  </button>
-                </div>
-              )}
             </div>
 
             <div className="soft-card p-6 sm:p-7">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Privacidade e automações</p>
-              <div className="mt-5 grid gap-3">
-                {[
-                  ['privateFeed', 'Feed privado por padrão', 'Somente vocês têm acesso ao conteúdo.'],
-                  ['pushNotifications', 'Notificações push', 'Receba lembretes de datas e memórias.'],
-                  ['autoMemories', 'Memórias automáticas', 'Exibir lembranças recorrentes na home.'],
-                  ['blurPhotos', 'Ocultar prévia de fotos', 'As fotos ficarão desfocadas até você tocar nelas.'],
-                  ['pinOnPosts', 'Proteção de Memórias', 'Exigir o PIN de segurança para visualizar as fotos e postagens.'],
-                ].map(([key, title, description]) => (
-                  <label key={key} className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300" style={{ background: 'linear-gradient(145deg, var(--ou-card-bg, rgba(255,255,255,0.92)), rgba(255,255,255,0.84))' }}>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Privacidade e Seguranca</p>
+              <div className="mt-5 space-y-4">
+                <div className="flex flex-col gap-3">
+                  <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
                     <input
                       type="checkbox"
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-950 focus:ring-slate-900"
-                      checked={settings[key]}
-                      onChange={(e) => updateSetting(key, e.target.checked)}
+                      checked={settings.pinEnabled || false}
+                      onChange={(e) => updateSetting('pinEnabled', e.target.checked)}
                     />
                     <span>
-                      <span className="block text-sm font-semibold text-slate-900">{title}</span>
-                      <span className="mt-1 block text-sm text-slate-600">{description}</span>
+                      <span className="block text-sm font-semibold text-slate-900">Bloqueio Geral (App)</span>
+                      <span className="mt-1 block text-sm text-slate-600">Exigir PIN ou Biometria ao abrir o aplicativo.</span>
                     </span>
                   </label>
-                ))}
-              </div>
-            </div>
 
-            <div className="soft-card p-6 sm:p-7">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Tela de Bloqueio (Cofre)</p>
-              <div className="mt-5 grid gap-4">
-                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300" style={{ background: 'linear-gradient(145deg, var(--ou-card-bg, rgba(255,255,255,0.92)), rgba(255,255,255,0.84))' }}>
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-950 focus:ring-slate-900"
-                    checked={settings.pinEnabled || false}
-                    onChange={(e) => updateSetting('pinEnabled', e.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-900">Exigir código ao abrir</span>
-                    <span className="mt-1 block text-sm text-slate-600">O app só será acessível após digitar o PIN de segurança.</span>
-                  </span>
-                </label>
+                  <div className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 bg-slate-50 dark:bg-white/5">
+                    <div>
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">Biometria (FaceID / Digital)</span>
+                      <span className="mt-1 block text-xs text-slate-500">Usar reconhecimento nativo para desbloqueio.</span>
+                    </div>
+                    <button 
+                      onClick={handleEnableBiometrics}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${settings.biometricsEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 dark:bg-white/10 text-slate-600'}`}
+                    >
+                      {settings.biometricsEnabled ? 'Ativado ✓' : 'Ativar'}
+                    </button>
+                  </div>
+                </div>
 
                 {settings.pinEnabled && (
                   <div className="grid gap-4 sm:grid-cols-2 mt-2">
@@ -623,7 +480,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div>
-                      <label className="field-label">Foto de fundo (Secreta)</label>
+                      <label className="field-label">Foto de fundo do cofre</label>
                       <input
                         type="file"
                         accept="image/*"
@@ -635,34 +492,41 @@ export default function SettingsPage() {
                               const formData = new FormData()
                               formData.append('file', file)
                               formData.append('upload_preset', 'etx8raxe')
-                              
-                              const response = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', {
-                                method: 'POST',
-                                body: formData
-                              })
-                              
-                              const data = await response.json()
-                              if (data.secure_url) {
-                                updateSetting('pinPhoto', data.secure_url)
-                              }
-                            } catch (err) {
-                              console.error('Erro no upload do PIN:', err)
-                              alert('Erro ao subir foto do PIN')
-                            }
+                              const res = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', { method: 'POST', body: formData })
+                              const data = await res.json()
+                              if (data.secure_url) updateSetting('pinPhoto', data.secure_url)
+                            } catch (err) { alert('Erro no upload') }
                           }
                         }}
                       />
-                      {settings.pinPhoto && (
-                        <p className="mt-2 text-xs text-emerald-500 font-semibold">✓ Foto carregada (aparecerá no fundo)</p>
-                      )}
                     </div>
                   </div>
                 )}
+                
+                <div className="pt-4 space-y-3">
+                  {[
+                    ['blurPhotos', 'Ocultar prévia de fotos', 'As fotos ficarão desfocadas no feed.'],
+                    ['pinOnPosts', 'PIN individual em posts', 'Proteção extra em cada memória.'],
+                  ].map(([key, title, description]) => (
+                    <label key={key} className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        checked={settings[key]}
+                        onChange={(e) => updateSetting(key, e.target.checked)}
+                      />
+                      <span>
+                        <span className="block text-sm font-bold text-slate-900 dark:text-white">{title}</span>
+                        <span className="mt-1 block text-xs text-slate-500">{description}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
 
             <div className="soft-card p-6 sm:p-7">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Preview</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Preview Visual</p>
               <div className={`mt-4 overflow-hidden rounded-3xl border border-white/80 p-5 shadow-lg ${previewTextClass}`} style={{ background: previewBg }}>
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -670,20 +534,6 @@ export default function SettingsPage() {
                     <p className="mt-2 text-lg font-semibold">{settings.theme}</p>
                   </div>
                   <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${THEME_PREVIEWS[settings.theme] || THEME_PREVIEWS.Aurora}`} />
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl px-4 py-3" style={{ background: previewTileBg }}>
-                    <p className={`text-xs uppercase tracking-[0.22em] ${previewMutedClass}`}>Principal</p>
-                    <p className="mt-1 text-sm font-semibold">{settings.primary}</p>
-                  </div>
-                  <div className="rounded-2xl px-4 py-3" style={{ background: previewTileBg }}>
-                    <p className={`text-xs uppercase tracking-[0.22em] ${previewMutedClass}`}>Secundária</p>
-                    <p className="mt-1 text-sm font-semibold">{settings.secondary}</p>
-                  </div>
-                  <div className="rounded-2xl px-4 py-3" style={{ background: previewTileBg }}>
-                    <p className={`text-xs uppercase tracking-[0.22em] ${previewMutedClass}`}>Fundo</p>
-                    <p className="mt-1 text-sm font-semibold">{settings.backgroundIntensity}%</p>
-                  </div>
                 </div>
               </div>
             </div>

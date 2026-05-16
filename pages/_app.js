@@ -1,44 +1,26 @@
 import '../styles/globals.css'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '../src/context/AuthContext'
 import { applyThemeToDocument, getThemeSettingsKey, readThemeSettings, saveThemeSettings } from '../src/theme'
-import LockScreen from '../components/LockScreen'
+import AppLock from '../components/AppLock'
 import { db } from '../src/firebase/firebaseClient'
 import { doc, onSnapshot } from 'firebase/firestore'
 
 function AppInner({ Component, pageProps }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [isLocked, setIsLocked] = useState(false)
-  const [pinSettings, setPinSettings] = useState({ expectedPin: '', photo: '' })
   
   useEffect(() => {
     if (loading) return
     const storageKey = getThemeSettingsKey(user?.uid)
-
-    // Removido readThemeSettings aqui para evitar o flicker do modo claro
-    // O tema agora é aplicado via AuthContext assim que o perfil é carregado.
-
-    const handleFocus = () => {
-      // Sincroniza apenas se necessário
-    }
 
     // Solicita permissão de notificação logo no início
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default') {
         Notification.requestPermission()
       }
-    }
-
-    // Registro Manual do SW em Dev (opcional, mas bom para teste local)
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && process.env.NODE_ENV === 'development') {
-       navigator.serviceWorker.register('/sw.js').then((reg) => {
-         console.log('SW Registered in Dev:', reg.scope)
-       }).catch((err) => {
-         console.warn('SW Registration failed in Dev:', err)
-       })
     }
 
     const handleStorage = (event) => {
@@ -48,10 +30,9 @@ function AppInner({ Component, pageProps }) {
       }
     }
 
-    window.addEventListener('focus', handleFocus)
     window.addEventListener('storage', handleStorage)
 
-    // Listener Real-time do Firebase
+    // Listener Real-time do Firebase para Sincronização de Temas e Configurações
     let unsubFirestore = null
     if (user && db) {
       const userRef = doc(db, 'users', user.uid)
@@ -60,17 +41,13 @@ function AppInner({ Component, pageProps }) {
           const cloudSettings = docSnap.data().settings
           saveThemeSettings(storageKey, cloudSettings)
           applyThemeToDocument(cloudSettings)
-          if (cloudSettings.pinEnabled && cloudSettings.pinCode) {
-            setPinSettings({ expectedPin: cloudSettings.pinCode, photo: cloudSettings.pinPhoto })
-          }
         }
       })
     }
 
-    // Listener de Notificações do Casal (ex: Alimentar Pet)
+    // Listener Global de Notificações do Casal
     let unsubNotif = null
     if (user && db) {
-      // Primeiro pegamos o perfil para saber o coupleId
       const userRef = doc(db, 'users', user.uid)
       onSnapshot(userRef, (uSnap) => {
         if (uSnap.exists() && uSnap.data().coupleId) {
@@ -97,28 +74,14 @@ function AppInner({ Component, pageProps }) {
     }
 
     return () => {
-      window.removeEventListener('focus', handleFocus)
       window.removeEventListener('storage', handleStorage)
       if (unsubFirestore) unsubFirestore()
       if (unsubNotif) unsubNotif()
     }
-  }, [user, loading, router.pathname])
-
-  const handleUnlock = () => {
-    setIsLocked(false)
-    sessionStorage.setItem('onlyus-unlocked', 'true')
-  }
+  }, [user, loading])
 
   return (
-    <>
-      <AnimatePresence mode="wait">
-        {isLocked && user ? (
-          <motion.div key="lock-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative z-[100]">
-            <LockScreen expectedPin={pinSettings.expectedPin} photo={pinSettings.photo} onUnlock={handleUnlock} />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
+    <AppLock>
       <AnimatePresence mode="wait">
         <motion.div
           key={router.pathname}
@@ -131,20 +94,11 @@ function AppInner({ Component, pageProps }) {
           <Component {...pageProps} />
         </motion.div>
       </AnimatePresence>
-    </>
+    </AppLock>
   )
 }
 
 export default function App(props) {
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' && 'serviceWorker' in navigator) {
-      // Em dev, limpamos apenas se houver conflito, mas agora estamos registrando um para teste
-      // navigator.serviceWorker.getRegistrations().then((registrations) => {
-      //   registrations.forEach((registration) => registration.unregister())
-      // })
-    }
-  }, [])
-
   return (
     <AuthProvider>
       <AppInner {...props} />
