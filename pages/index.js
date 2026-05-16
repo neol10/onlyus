@@ -12,6 +12,7 @@ import { useAuth } from '../src/context/AuthContext'
 import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../src/firebase/firebaseClient'
 import MusicCard from '../components/MusicCard'
+import LocationCard from '../components/LocationCard'
 import { useToast } from '../src/context/ToastContext'
 
 export default function Home() {
@@ -179,6 +180,7 @@ export default function Home() {
           </div>
 
           <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
+            <LocationCard coupleId={profile?.coupleId} />
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Live Presence</p>
               <div className="mt-2 flex items-center gap-2">
