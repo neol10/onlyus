@@ -80,6 +80,43 @@ function AppInner({ Component, pageProps }) {
     }
   }, [user, loading])
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden">
+        {/* Fundo com gradientes animados */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-rose-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 text-center"
+        >
+          <div className="relative inline-block mb-8">
+            {/* Efeito de Glow atrás da logo */}
+            <div className="absolute inset-0 bg-[var(--ou-accent,#6366f1)] blur-[40px] opacity-40 animate-pulse" />
+            
+            <div className="relative w-24 h-24 bg-white dark:bg-slate-900 rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/20">
+              <span className="text-[var(--ou-accent,#6366f1)] text-4xl font-black tracking-tighter">OU</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-white text-2xl font-bold tracking-tight">OnlyUs</h2>
+            <div className="flex items-center justify-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+              <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+            </div>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-4">Sincronizando seu universo</p>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <AppLock>
       <AnimatePresence mode="wait">
