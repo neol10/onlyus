@@ -100,7 +100,18 @@ export default function PetPage() {
     await updatePet(updates)
   }
 
-  if (loading || !petData || !user) return null
+  if (loading || !petData || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-2xl animate-bounce mx-auto">
+            <span className="text-white font-black text-xl">🐾</span>
+          </div>
+          <p className="text-white/50 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Acordando o bixinho...</p>
+        </div>
+      </div>
+    )
+  }
 
   const interactions = petData.interactions || {}
   const partnerId = profile?.coupleId ? Object.keys(interactions).find(id => id !== user.uid) : null
