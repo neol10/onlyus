@@ -25,6 +25,22 @@ function AppInner({ Component, pageProps }) {
       // Sincroniza apenas se necessário
     }
 
+    // Solicita permissão de notificação logo no início
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
+
+    // Registro Manual do SW em Dev (opcional, mas bom para teste local)
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && process.env.NODE_ENV === 'development') {
+       navigator.serviceWorker.register('/sw.js').then((reg) => {
+         console.log('SW Registered in Dev:', reg.scope)
+       }).catch((err) => {
+         console.warn('SW Registration failed in Dev:', err)
+       })
+    }
+
     const handleStorage = (event) => {
       if (event.key === storageKey || event.key === 'onlyus-active-user-id') {
         const currentSettings = readThemeSettings(storageKey)
@@ -65,7 +81,14 @@ function AppInner({ Component, pageProps }) {
               const notif = nSnap.data()
               // Só mostra se for recente (últimos 30 segundos) e não for do próprio autor
               if (notif.timestamp > Date.now() - 30000 && notif.from !== user.uid) {
-                alert(`🔔 Mensagem do Amor: ${notif.message}`)
+                if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+                  new Notification('OnlyUs ❤️', { 
+                    body: notif.message, 
+                    icon: '/logo.png',
+                    badge: '/logo.png',
+                    tag: 'onlyus-notif' 
+                  })
+                }
               }
             }
           })
@@ -115,12 +138,10 @@ function AppInner({ Component, pageProps }) {
 export default function App(props) {
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => registration.unregister())
-      })
-      if ('caches' in window) {
-        caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)))
-      }
+      // Em dev, limpamos apenas se houver conflito, mas agora estamos registrando um para teste
+      // navigator.serviceWorker.getRegistrations().then((registrations) => {
+      //   registrations.forEach((registration) => registration.unregister())
+      // })
     }
   }, [])
 
