@@ -25,7 +25,7 @@ export default function PetPage() {
     const unsub = onSnapshot(coupleRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data()
-        const pet = data.pet || { 
+        const pet = { 
           type: 'cat', 
           name: 'Bixinho', 
           level: 1, 
@@ -34,7 +34,8 @@ export default function PetPage() {
           love: 100, 
           streak: 0,
           lastAction: Date.now(),
-          interactions: {} 
+          interactions: {},
+          ...(data.pet || {})
         }
 
         // Lógica de Streak (Foguinho)
@@ -172,7 +173,7 @@ export default function PetPage() {
             className="relative z-10"
           >
             <span className="text-[140px] sm:text-[180px] block drop-shadow-2xl select-none filter">
-              {PET_TYPES[petData.type].emoji}
+              {PET_TYPES[petData.type || 'cat']?.emoji || '🐱'}
             </span>
             {petData.hunger < 30 && (
               <motion.span 
