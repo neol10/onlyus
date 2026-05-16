@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS = {
   pinCode: '',
   pinPhoto: '',
   biometricsEnabled: false,
+  biometricCredentialId: '',
   displayName: '',
   partnerNick: 'Amor'
 }
@@ -201,9 +202,18 @@ export default function SettingsPage() {
       })
 
       if (credential) {
+        // Converte o ID para string para salvar no Firebase
+        const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+        
         updateSetting('biometricsEnabled', true)
+        updateSetting('biometricCredentialId', credentialId)
+        
         alert('Biometria configurada com sucesso! 🛡️')
-        handleSave({ ...settings, biometricsEnabled: true })
+        handleSave({ 
+          ...settings, 
+          biometricsEnabled: true, 
+          biometricCredentialId: credentialId 
+        })
       }
     } catch (err) {
       console.error('Erro biometria:', err)
