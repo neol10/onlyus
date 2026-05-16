@@ -59,11 +59,11 @@ export default function TimelinePage() {
       <NavBar />
       <main className="page-shell">
         <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-center">
-          <div className="soft-card p-6 sm:p-8">
+          <div className="soft-card p-4 sm:p-8">
             <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]" style={{ borderRadius: '999px' }}>
               Histórico do Casal
             </span>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Nossa Jornada em um só lugar.</h1>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl break-words">Nossa Jornada em um só lugar.</h1>
             <p className="section-subtitle">
               De fotos casuais a grandes marcos, tudo o que vivemos está guardado aqui para sempre.
             </p>

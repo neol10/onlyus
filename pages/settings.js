@@ -268,16 +268,16 @@ export default function SettingsPage() {
       <NavBar />
       <main className="page-shell">
         <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.6fr] lg:items-stretch">
-          <div className="soft-card p-6 sm:p-10 flex flex-col justify-center">
+          <div className="soft-card p-4 sm:p-10 flex flex-col justify-center">
             <span className="theme-pill inline-flex items-center px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-[0.24em] w-fit" style={{ borderRadius: '999px' }}>
               Configurações
             </span>
-            <h1 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.1]">Personalize o espaço de vocês.</h1>
+            <h1 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.1] break-words">Personalize o espaço de vocês.</h1>
             <p className="mt-4 text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium max-w-xl">
               Ajuste tema, cores, intensidade visual e preferências do app para deixar o OnlyUs com a identidade do casal.
             </p>
           </div>
-          <div className="soft-card p-6 sm:p-8 flex flex-col justify-between bg-white/40 dark:bg-slate-900/40">
+          <div className="soft-card p-4 sm:p-8 flex flex-col justify-between bg-white/40 dark:bg-slate-900/40">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Ações</p>
               <p className="mt-2 text-xs text-slate-400">{savedAt ? `Salvo às ${savedAt}` : 'Alterações pendentes'}</p>
@@ -294,7 +294,7 @@ export default function SettingsPage() {
 
         <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
           <aside className="space-y-6">
-            <div className="soft-card p-6">
+            <div className="soft-card p-4 sm:p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Conta</p>
               <div className="mt-4 space-y-3 text-sm text-slate-600">
                 <div className="rounded-2xl px-4 py-3" style={{ background: 'linear-gradient(145deg, var(--ou-card-bg, rgba(255,255,255,0.92)), rgba(255,255,255,0.84))' }}>
@@ -312,18 +312,18 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="soft-card p-6">
+            <div className="soft-card p-4 sm:p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Atalhos</p>
               <div className="mt-4 grid gap-3">
-                <button className="secondary-button justify-between" type="button" onClick={() => updateSetting('theme', 'Aurora')}>
+                <button className="secondary-button w-full justify-between" type="button" onClick={() => updateSetting('theme', 'Aurora')}>
                   Restabelecer visual
                   <span className="text-xs text-slate-400">Aurora</span>
                 </button>
-                <button className="secondary-button justify-between" type="button" onClick={() => router.push('/timeline')}>
+                <button className="secondary-button w-full justify-between" type="button" onClick={() => router.push('/timeline')}>
                   Abrir timeline
                   <span className="text-xs text-slate-400">Ir</span>
                 </button>
-                <button className="secondary-button justify-between" type="button" onClick={() => router.push('/')}>
+                <button className="secondary-button w-full justify-between" type="button" onClick={() => router.push('/')}>
                   Abrir feed
                   <span className="text-xs text-slate-400">Ir</span>
                 </button>
@@ -332,7 +332,7 @@ export default function SettingsPage() {
           </aside>
 
           <section className="space-y-6">
-            <div className="soft-card p-6 sm:p-7">
+            <div className="soft-card p-4 sm:p-7">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 mb-4">Temas Predefinidos</p>
               <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
                 {THEME_OPTIONS.map((option) => (
@@ -441,7 +441,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="soft-card p-6 sm:p-7">
+            <div className="soft-card p-4 sm:p-7">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Identidade do Casal</p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div>
@@ -464,7 +464,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="sm:col-span-2 pt-2">
                   <label className="field-label text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 block">Foto do Radar (Pin no Mapa)</label>
-                  <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                  <div className="flex flex-wrap items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
                      <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 dark:bg-white/10 flex-shrink-0 border-2 border-indigo-500/20 shadow-inner">
                        <img src={settings?.radarPhoto || 'https://ui-avatars.com/api/?name=Radar'} className="w-full h-full object-cover" />
                     </div>
@@ -498,7 +498,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="soft-card p-6 sm:p-7">
+            <div className="soft-card p-4 sm:p-7">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Privacidade e Seguranca</p>
               <div className="mt-5 space-y-4">
                 <div className="flex flex-col gap-3">
@@ -591,7 +591,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="soft-card p-6 sm:p-7">
+            <div className="soft-card p-4 sm:p-7">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Preview Visual</p>
               <div className={`mt-4 overflow-hidden rounded-3xl border border-white/80 p-5 shadow-lg ${previewTextClass}`} style={{ background: previewBg }}>
                 <div className="flex items-center justify-between gap-4">
