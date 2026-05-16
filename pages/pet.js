@@ -3,13 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import NavBar from '../components/NavBar'
 import { useAuth } from '../src/context/AuthContext'
 import { db } from '../src/firebase/firebaseClient'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+
+const PET_TYPES = {
+  cat: { emoji: '🐱', color: 'from-orange-400 to-red-500', name: 'Gatinho' },
+  dog: { emoji: '🐶', color: 'from-blue-400 to-indigo-500', name: 'Cachorrinho' },
+  rabbit: { emoji: '🐰', color: 'from-pink-400 to-rose-500', name: 'Coelhinho' },
+  bear: { emoji: '🐻', color: 'from-amber-600 to-orange-800', name: 'Ursinho' }
+}
 
 export default function PetPage() {
   const { user, profile, loading } = useAuth()
-  const [petData, setPetData] = useState({ mood: 100, name: 'Bixinho', level: 1 })
+  const [petData, setPetData] = useState(null)
   const [showHearts, setShowHearts] = useState(false)
-  const [petting, setPetting] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     if (!profile?.coupleId) return
@@ -18,176 +25,212 @@ export default function PetPage() {
     const unsub = onSnapshot(coupleRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data()
-        if (data.pet) setPetData(data.pet)
+        const pet = data.pet || { 
+          type: 'cat', 
+          name: 'Bixinho', 
+          level: 1, 
+          exp: 0, 
+          hunger: 100, 
+          love: 100, 
+          streak: 0,
+          lastAction: Date.now(),
+          interactions: {} 
+        }
+
+        // Lógica de Streak (Foguinho)
+        const now = Date.now()
+        const oneDay = 24 * 60 * 60 * 1000
+        const timeSinceLast = now - (pet.lastAction || now)
+
+        if (timeSinceLast > oneDay) {
+          pet.streak = 0
+          pet.hunger = Math.max(0, pet.hunger - 20)
+        }
+
+        setPetData(pet)
       }
     })
     return () => unsub()
   }, [profile?.coupleId])
 
   const updatePet = async (updates) => {
-    if (!profile?.coupleId) return
-    const newPet = { ...petData, ...updates }
-    setPetData(newPet)
+    if (!profile?.coupleId || actionLoading) return
+    setActionLoading(true)
+    const newPet = { ...petData, ...updates, lastAction: Date.now() }
+    
+    // Sistema de Exp
+    if (updates.hunger || updates.love) {
+      newPet.exp += 10
+      if (newPet.exp >= 100) {
+        newPet.level += 1
+        newPet.exp = 0
+      }
+    }
+
     const coupleRef = doc(db, 'couples', profile.coupleId)
     await setDoc(coupleRef, { pet: newPet }, { merge: true })
+    setActionLoading(false)
   }
 
-  const handlePetting = () => {
-    setPetting(true)
-    setShowHearts(true)
-    updatePet({ mood: Math.min(petData.mood + 5, 100) })
-    setTimeout(() => {
-      setPetting(false)
-      setShowHearts(false)
-    }, 2000)
+  const handleAction = async (type) => {
+    const today = new Date().toDateString()
+    const userInteractions = petData.interactions?.[user.uid] || {}
+    
+    if (userInteractions.lastDate === today && userInteractions[type]) {
+      alert(`Você já deu ${type === 'feed' ? 'comida' : 'carinho'} hoje! Deixe o Amor fazer a parte dele(a) ❤️`)
+      return
+    }
+
+    const updates = {
+      interactions: {
+        ...petData.interactions,
+        [user.uid]: { ...userInteractions, [type]: true, lastDate: today }
+      }
+    }
+
+    if (type === 'feed') {
+      updates.hunger = Math.min(petData.hunger + 20, 100)
+      updates.streak = petData.streak + 1
+    } else {
+      updates.love = Math.min(petData.love + 20, 100)
+      setShowHearts(true)
+      setTimeout(() => setShowHearts(false), 2000)
+    }
+
+    await updatePet(updates)
   }
 
-  const handleFeed = () => {
-    updatePet({ mood: Math.min(petData.mood + 15, 100), level: petData.level + 0.1 })
-  }
+  if (loading || !petData) return null
 
-  if (loading) return null
-
-  if (!profile?.coupleId) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="soft-card p-8 text-center max-w-sm">
-          <p className="text-slate-500 mb-4">Você precisa estar em um casal para adotar um pet!</p>
-        </div>
-      </div>
-    )
-  }
-
-  const getMoodEmoji = () => {
-    if (petData.mood > 80) return '🥰'
-    if (petData.mood > 50) return '🙂'
-    if (petData.mood > 20) return '😴'
-    return '😿'
-  }
+  const partnerId = profile.coupleId ? (petData.interactions ? Object.keys(petData.interactions).find(id => id !== user.uid) : null) : null
+  const partnerInteractions = partnerId ? petData.interactions[partnerId] : null
+  const today = new Date().toDateString()
+  
+  const bothFed = (petData.interactions[user.uid]?.feed && petData.interactions[user.uid]?.lastDate === today) && 
+                  (partnerInteractions?.feed && partnerInteractions?.lastDate === today)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white dark:from-slate-950 dark:to-slate-900 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <NavBar />
       
-      <main className="max-w-4xl mx-auto px-4 pt-8">
-        <header className="text-center mb-12">
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-slate-900 dark:text-white"
-          >
-            Nosso Pet {getMoodEmoji()}
-          </motion.h1>
-          <p className="text-slate-500 mt-2">Cuidem dele juntos!</p>
-        </header>
+      <main className="max-w-xl mx-auto px-4 pt-10">
+        {/* Status Topo */}
+        <div className="flex justify-between items-center mb-8 bg-white dark:bg-white/5 p-4 rounded-3xl shadow-sm border border-slate-200 dark:border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-2xl">🔥</div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">Sequência</p>
+              <p className="text-xl font-bold dark:text-white">{petData.streak} Dias</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Nível {petData.level}</p>
+            <div className="w-32 h-2 bg-slate-100 dark:bg-white/10 rounded-full mt-1 overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${petData.exp}%` }}
+                className="h-full bg-indigo-500" 
+              />
+            </div>
+          </div>
+        </div>
 
-        <div className="relative flex flex-col items-center">
-          {/* Corações Animados */}
+        {/* O PET VIVO */}
+        <div className="relative flex flex-col items-center py-10">
           <AnimatePresence>
             {showHearts && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute top-0 flex gap-4"
-              >
-                {[1, 2, 3].map(i => (
-                  <motion.span
-                    key={i}
-                    initial={{ y: 0, opacity: 1 }}
-                    animate={{ y: -100, opacity: 0 }}
-                    transition={{ duration: 1.5, delay: i * 0.2 }}
-                    className="text-4xl"
-                  >
-                    ❤️
-                  </motion.span>
+              <motion.div className="absolute top-0 flex gap-4 z-20">
+                {[1,2,3].map(i => (
+                  <motion.span key={i} initial={{y:0, opacity:1}} animate={{y:-150, opacity:0}} transition={{duration:1.5, delay: i*0.1}} className="text-5xl">❤️</motion.span>
                 ))}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* O PET */}
           <motion.div
             animate={{ 
-              y: petting ? [0, -10, 0] : [0, -15, 0],
-              scale: petting ? [1, 1.05, 1] : 1
+              scale: [1, 1.02, 1],
+              y: petData.hunger < 30 ? [0, 2, 0] : [0, -10, 0],
+              rotate: petData.hunger < 30 ? [-1, 1, -1] : 0
             }}
-            transition={{ 
-              repeat: Infinity, 
-              duration: petting ? 0.5 : 3,
-              ease: "easeInOut" 
-            }}
-            onClick={handlePetting}
-            className="cursor-pointer relative z-10"
+            transition={{ repeat: Infinity, duration: petData.hunger < 30 ? 0.2 : 2.5 }}
+            className="relative z-10"
           >
-            <div className="relative">
-              <img 
-                src="/pet.png" 
-                alt="Nosso Pet" 
-                className="w-64 h-64 sm:w-80 sm:h-80 object-contain drop-shadow-[0_35px_35px_rgba(0,0,0,0.2)]"
-              />
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-48 h-8 bg-black/10 blur-xl rounded-full"></div>
-            </div>
+            <span className="text-[140px] sm:text-[180px] block drop-shadow-2xl select-none filter">
+              {PET_TYPES[petData.type].emoji}
+            </span>
+            {petData.hunger < 30 && (
+              <motion.span 
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="absolute -top-4 -right-4 text-3xl"
+              >
+                💭🍲
+              </motion.span>
+            )}
           </motion.div>
+          <div className="w-40 h-6 bg-black/5 dark:bg-white/5 blur-xl rounded-full mt-[-20px]"></div>
+        </div>
 
-          {/* Status */}
-          <div className="mt-12 w-full max-w-md bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <input 
-                  type="text"
-                  value={petData.name}
-                  onChange={e => updatePet({ name: e.target.value })}
-                  className="bg-transparent text-xl font-bold text-slate-900 dark:text-white border-b border-transparent hover:border-slate-300 focus:outline-none focus:border-pink-500 transition-colors"
-                />
-                <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Nível {Math.floor(petData.level)}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Felicidade</span>
-                <p className="text-2xl font-black text-pink-500">{petData.mood}%</p>
-              </div>
-            </div>
-
-            <div className="h-3 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden mb-8">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${petData.mood}%` }}
-                className="h-full bg-gradient-to-r from-pink-500 to-violet-600 shadow-[0_0_15px_rgba(236,72,153,0.5)]"
-              ></motion.div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+        {/* Nome e Troca */}
+        <div className="text-center mb-10">
+          <input 
+            type="text"
+            value={petData.name}
+            onChange={e => updatePet({ name: e.target.value })}
+            className="bg-transparent text-3xl font-black text-center text-slate-900 dark:text-white focus:outline-none"
+          />
+          <div className="flex justify-center gap-2 mt-4">
+            {Object.entries(PET_TYPES).map(([id, info]) => (
               <button 
-                onClick={handlePetting}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-pink-50 dark:bg-pink-500/10 hover:bg-pink-100 transition-colors group"
+                key={id}
+                onClick={() => updatePet({ type: id })}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${petData.type === id ? 'bg-white shadow-md scale-110 ring-2 ring-indigo-500' : 'bg-slate-200 dark:bg-white/5 opacity-50'}`}
               >
-                <span className="text-2xl group-hover:scale-125 transition-transform">👋</span>
-                <span className="text-xs font-bold text-pink-700 dark:text-pink-400 uppercase tracking-wider">Carinho</span>
+                {info.emoji}
               </button>
-              <button 
-                onClick={handleFeed}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 transition-colors group"
-              >
-                <span className="text-2xl group-hover:scale-125 transition-transform">🐟</span>
-                <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Alimentar</span>
-              </button>
-            </div>
-
-            <button 
-              onClick={async () => {
-                const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
-                await setDoc(notifRef, {
-                  from: user.uid,
-                  message: `O ${petData.name} está com fome! 🥺`,
-                  timestamp: Date.now()
-                })
-                alert('Alerta de fome enviado ao Amor!')
-              }}
-              className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity"
-            >
-              <span>Chamar para Alimentar 🔔</span>
-            </button>
+            ))}
           </div>
+        </div>
+
+        {/* Ações de Cuidado */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="soft-card p-6 flex flex-col items-center gap-4">
+             <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                <motion.div animate={{ width: `${petData.hunger}%` }} className="h-full bg-amber-500" />
+             </div>
+             <button 
+              onClick={() => handleAction('feed')}
+              className="w-full py-4 rounded-2xl bg-amber-500 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-transform"
+             >
+               Alimentar 🐟
+             </button>
+             <p className="text-[10px] font-bold text-slate-400">
+               {petData.interactions[user.uid]?.feed && petData.interactions[user.uid]?.lastDate === today ? '✅ Você já alimentou' : '⏳ Sua vez'}
+             </p>
+          </div>
+
+          <div className="soft-card p-6 flex flex-col items-center gap-4">
+             <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                <motion.div animate={{ width: `${petData.love}%` }} className="h-full bg-pink-500" />
+             </div>
+             <button 
+              onClick={() => handleAction('love')}
+              className="w-full py-4 rounded-2xl bg-pink-500 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-transform"
+             >
+               Carinho 👋
+             </button>
+             <p className="text-[10px] font-bold text-slate-400">
+               {petData.interactions[user.uid]?.love && petData.interactions[user.uid]?.lastDate === today ? '✅ Você já deu carinho' : '⏳ Sua vez'}
+             </p>
+          </div>
+        </div>
+
+        {/* Alerta de Missão */}
+        <div className={`mt-6 p-4 rounded-2xl border text-center transition-colors ${bothFed ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-white/5 border-transparent text-slate-500'}`}>
+           <p className="text-xs font-bold uppercase tracking-widest">
+             {bothFed ? '✨ Missão Diária Completa! +1 Foguinho' : 'Falta um de vocês cuidar para ganhar o foguinho!'}
+           </p>
         </div>
       </main>
     </div>
