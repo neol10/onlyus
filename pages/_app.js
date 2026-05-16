@@ -7,6 +7,7 @@ import { applyThemeToDocument, getThemeSettingsKey, readThemeSettings, saveTheme
 import AppLock from '../components/AppLock'
 import { db } from '../src/firebase/firebaseClient'
 import { doc, onSnapshot } from 'firebase/firestore'
+import { useToast } from '../src/context/ToastContext'
 
 function AppInner({ Component, pageProps }) {
   const { user, loading } = useAuth()
