@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../src/context/AuthContext'
 import { db } from '../src/firebase/firebaseClient'
+import { motion, AnimatePresence } from 'framer-motion'
 import { doc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore'
 
 export default function PostCard({ post = {}, settings = {} }) {
@@ -20,6 +21,11 @@ export default function PostCard({ post = {}, settings = {} }) {
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [isLiking, setIsLiking] = useState(false)
+  const [localLikes, setLocalLikes] = useState(likes)
+
+  useEffect(() => {
+    setLocalLikes(likes)
+  }, [likes])
   const [isEditing, setIsEditing] = useState(false)
   const [editCaption, setEditCaption] = useState(caption)
 
@@ -157,20 +163,45 @@ export default function PostCard({ post = {}, settings = {} }) {
             <button 
               onClick={async () => {
                 if (isLiking || !profile?.coupleId) return
+                
+                // Lógica Otimista: Atualiza localmente NA HORA
+                const hasLiked = localLikes.includes(user?.uid)
+                const newLikes = hasLiked 
+                  ? localLikes.filter(id => id !== user?.uid)
+                  : [...localLikes, user?.uid]
+                
+                setLocalLikes(newLikes)
                 setIsLiking(true)
-                const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
-                const hasLiked = likes.includes(user?.uid)
-                await updateDoc(postRef, {
-                  likes: hasLiked ? arrayRemove(user?.uid) : arrayUnion(user?.uid)
-                })
-                setIsLiking(false)
+
+                try {
+                  const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
+                  await updateDoc(postRef, {
+                    likes: hasLiked ? arrayRemove(user?.uid) : arrayUnion(user?.uid)
+                  })
+                } catch (err) {
+                  console.error('Erro ao curtir:', err)
+                  setLocalLikes(likes) // Reverte em caso de erro
+                } finally {
+                  setIsLiking(false)
+                }
               }}
-              className={`flex items-center gap-2 text-sm font-bold transition-colors ${likes.includes(user?.uid) ? 'text-rose-500' : 'text-slate-500 hover:text-rose-500'}`}
+              className="group flex items-center gap-2 text-sm font-bold transition-colors"
             >
-              <svg className={`h-5 w-5 ${likes.includes(user?.uid) ? 'fill-current' : 'fill-none stroke-current stroke-2'}`} viewBox="0 0 24 24">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              <span>{likes.length || 0}</span>
+              <motion.div
+                whileTap={{ scale: 0.7 }}
+                animate={{ 
+                  scale: localLikes.includes(user?.uid) ? [1, 1.4, 1] : 1,
+                }}
+                transition={{ duration: 0.3 }}
+                className={localLikes.includes(user?.uid) ? 'text-rose-500' : 'text-slate-500 group-hover:text-rose-500'}
+              >
+                <svg className={`h-6 w-6 ${localLikes.includes(user?.uid) ? 'fill-current' : 'fill-none stroke-current stroke-2'}`} viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+              </motion.div>
+              <span className={localLikes.includes(user?.uid) ? 'text-rose-500' : 'text-slate-500'}>
+                {localLikes.length || 0}
+              </span>
             </button>
 
             <button 
