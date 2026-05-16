@@ -22,7 +22,6 @@ export default function Home() {
   const [posts, setPosts] = useState([])
   const [coupleData, setCoupleData] = useState({ relationshipDate: '', myMood: '🥰', pinOnPosts: false, blurPhotos: false, pinCode: '' })
   const [isEditingDate, setIsEditingDate] = useState(false)
-  const [postsUnlocked, setPostsUnlocked] = useState(false)
   const [showMoodSelector, setShowMoodSelector] = useState(false)
 
   const MOOD_OPTIONS = ['🥰', '❤️', '😊', '🤩', '😴', '😢', '😤', '🥺', '🤯', '🥵']
@@ -34,7 +33,7 @@ export default function Home() {
   useEffect(() => {
     if (loading || !user || !db || !profile?.coupleId) return
     
-    // Busca os posts apenas DENTRO da sala do casal
+    // Busca apenas o contador de posts (e dados para o Throwback)
     const q = query(collection(db, 'couples', profile.coupleId, 'posts'), orderBy('createdAt', 'desc'))
     const unsubPosts = onSnapshot(q, (snapshot) => {
       const arr = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -62,48 +61,17 @@ export default function Home() {
       }
     })
 
-    // Escuta Notificações em Tempo Real
-    const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
-    const unsubNotif = onSnapshot(notifRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const notif = docSnap.data()
-        // Só notifica se for do parceiro e for recente (últimos 30s)
-        if (notif.from !== user.uid && Date.now() - notif.timestamp < 30000) {
-          if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-            new Notification('OnlyUs ❤️', { body: notif.message, icon: '/logo.png' })
-          }
-        }
-      }
-    })
-
-    return () => { unsubPosts(); unsubCouple(); unsubNotif() }
+    return () => { unsubPosts(); unsubCouple() }
   }, [user, profile?.coupleId, loading])
 
   const { showToast } = useToast()
-
-  const sendLoveNotification = async () => {
-    if (!profile?.coupleId || !user) return
-    const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
-    await setDoc(notifRef, {
-      from: user.uid,
-      message: `${profile.displayName || 'Seu Amor'} te mandou um carinho! ❤️`,
-      timestamp: Date.now(),
-      type: 'love'
-    })
-    showToast('Carinho enviado! ❤️')
-  }
 
   const saveCoupleData = async (newData) => {
     if (!user || !db || !profile?.coupleId) return
     const coupleRef = doc(db, 'couples', profile.coupleId)
     
     if (newData.myMood) {
-      // Usar dot notation para não sobrescrever o humor do parceiro
-      await updateDoc(coupleRef, {
-        [`moods.${user.uid}`]: newData.myMood
-      })
-
-      // Enviar notificação de humor
+      await updateDoc(coupleRef, { [`moods.${user.uid}`]: newData.myMood })
       const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
       await setDoc(notifRef, {
         from: user.uid,
@@ -114,9 +82,7 @@ export default function Home() {
     }
     
     if (newData.relationshipDate !== undefined) {
-      await updateDoc(coupleRef, { 
-        relationshipDate: newData.relationshipDate 
-      })
+      await updateDoc(coupleRef, { relationshipDate: newData.relationshipDate })
     }
   }
 
@@ -150,17 +116,15 @@ export default function Home() {
               <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl flex gap-1 w-full max-w-md">
                 <button 
                   onClick={() => setActiveTab('feed')}
-                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'feed' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                  className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'feed' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2v4a2 2 0 002 2h4" /></svg>
-                  Feed
+                  Resumo 📋
                 </button>
                 <button 
                   onClick={() => setActiveTab('radar')}
-                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'radar' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                  className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'radar' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  Radar
+                  Radar 📍
                 </button>
               </div>
             </div>
@@ -175,184 +139,156 @@ export default function Home() {
                   transition={{ duration: 0.2 }}
                 >
                   <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
-
-            <div className="flex flex-col gap-4">
-              <div className="soft-card p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
-                <svg className="w-40 h-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-              </div>
-              
-              <div>
-                <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] rounded-full">
-                  Nosso Tempo
-                </span>
-                
-                <div className="mt-6 mb-4">
-                  {coupleData.relationshipDate && !isEditingDate ? (
-                    <div onClick={() => setIsEditingDate(true)} className="cursor-pointer group">
-                      <LoveTimer startDate={coupleData.relationshipDate} />
-                      <p className="text-xs text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Toque para editar a data</p>
+                    <div className="flex flex-col gap-4">
+                      <div className="soft-card p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
+                          <svg className="w-40 h-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        
+                        <div>
+                          <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] rounded-full">
+                            Nosso Tempo
+                          </span>
+                          
+                          <div className="mt-6 mb-4">
+                            {coupleData.relationshipDate && !isEditingDate ? (
+                              <div onClick={() => setIsEditingDate(true)} className="cursor-pointer group">
+                                <LoveTimer startDate={coupleData.relationshipDate} />
+                                <p className="text-xs text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Toque para editar a data</p>
+                              </div>
+                            ) : (
+                              <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl backdrop-blur-sm border border-[var(--ou-accent-soft)]">
+                                <p className="text-sm font-medium mb-2">Quando a história começou?</p>
+                                <div className="flex gap-2">
+                                  <input 
+                                    type="date" 
+                                    value={coupleData.relationshipDate}
+                                    onChange={(e) => saveCoupleData({ relationshipDate: e.target.value })}
+                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--ou-accent)]"
+                                  />
+                                  <button onClick={() => setIsEditingDate(false)} className="px-4 bg-[var(--ou-accent)] text-white rounded-lg text-sm font-semibold">Salvar</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <MusicCard coupleId={profile?.coupleId} />
                     </div>
-                  ) : (
-                    <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl backdrop-blur-sm border border-[var(--ou-accent-soft)]">
-                      <p className="text-sm font-medium mb-2">Quando a história começou?</p>
-                      <div className="flex gap-2">
-                        <input 
-                          type="date" 
-                          value={coupleData.relationshipDate}
-                          onChange={(e) => saveCoupleData({ relationshipDate: e.target.value })}
-                          className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--ou-accent)]"
-                        />
-                        <button onClick={() => setIsEditingDate(false)} className="px-4 bg-[var(--ou-accent)] text-white rounded-lg text-sm font-semibold">Salvar</button>
+
+                    <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
+                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden">
+                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Live Presence</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                          </span>
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Sincronizados</span>
+                        </div>
+                      </div>
+                      
+                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">Seu Humor</p>
+                            <div className="flex items-center gap-2 relative">
+                              <button 
+                                onClick={() => setShowMoodSelector(!showMoodSelector)}
+                                className="text-3xl drop-shadow-md hover:scale-110 transition-transform active:scale-95"
+                              >
+                                {coupleData.myMood}
+                              </button>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase">Alterar</span>
+
+                              {showMoodSelector && (
+                                <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 grid grid-cols-5 gap-2 w-48 animate-in fade-in zoom-in duration-200">
+                                  {MOOD_OPTIONS.map(emoji => (
+                                    <button 
+                                      key={emoji}
+                                      onClick={() => {
+                                        saveCoupleData({ myMood: emoji })
+                                        setShowMoodSelector(false)
+                                      }}
+                                      className="text-2xl hover:bg-slate-100 dark:hover:bg-white/5 p-1 rounded-lg transition-colors"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+                          <div className="text-right">
+                            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">{coupleData.partnerNick}</p>
+                            <span className="text-3xl drop-shadow-md">{coupleData.partnerMood}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
+                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Total de Memórias</p>
+                        <p className="mt-1 text-lg font-semibold text-[var(--ou-accent)]">{posts.length} momentos gravados</p>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <MusicCard coupleId={profile?.coupleId} />
-          </div>
+                  </section>
 
-          <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden">
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Live Presence</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Sincronizados</span>
-              </div>
-            </div>
-            
-            <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">Seu Humor</p>
-                  <div className="flex items-center gap-2 relative">
-                    <button 
-                      onClick={() => setShowMoodSelector(!showMoodSelector)}
-                      className="text-3xl drop-shadow-md hover:scale-110 transition-transform active:scale-95"
-                    >
-                      {coupleData.myMood}
-                    </button>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Alterar</span>
-
-                    {showMoodSelector && (
-                      <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 grid grid-cols-5 gap-2 w-48 animate-in fade-in zoom-in duration-200">
-                        {MOOD_OPTIONS.map(emoji => (
-                          <button 
-                            key={emoji}
-                            onClick={() => {
-                              saveCoupleData({ myMood: emoji })
-                              setShowMoodSelector(false)
-                            }}
-                            className="text-2xl hover:bg-slate-100 dark:hover:bg-white/5 p-1 rounded-lg transition-colors"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
+                  <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
+                    <div className="space-y-6">
+                      <ThrowbackCard posts={posts} />
+                      <div className="soft-card p-5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border-indigo-100 dark:border-indigo-500/10">
+                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-indigo-600 dark:text-indigo-400">Dica de Hoje</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">Todas as fotos e memórias agora estão centralizadas na sua <b>Timeline</b>. Use o Radar para ver a localização em tempo real.</p>
+                        <Link href="/timeline">
+                          <button className="mt-4 text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 hover:underline">Ver Timeline →</button>
+                        </Link>
                       </div>
-                    )}
-                  </div>
-                </div>
-                <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
-                <div className="text-right">
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">{coupleData.partnerNick}</p>
-                  <span className="text-3xl drop-shadow-md">{coupleData.partnerMood}</span>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Total de Memórias</p>
-              <p className="mt-1 text-lg font-semibold text-[var(--ou-accent)]">{posts.length} momentos gravados</p>
-            </div>
-          </div>
-        </section>
+                    </div>
 
-        <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
-          <div className="space-y-6">
-            <NewPostForm />
-            <ThrowbackCard posts={posts} />
-            <div className="soft-card p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Dica</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">Toque no botão de coração flutuante a qualquer momento para enviar uma animação carinhosa de surpresa.</p>
-            </div>
-          </div>
-
-          <section className="space-y-4">
-            {posts.length === 0 && (
-              <div className="soft-card p-8 text-center">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Ainda vazio</p>
-                <p className="mt-3 text-lg font-medium text-slate-900 dark:text-slate-100">Nenhum post — comece adicionando memórias.</p>
-              </div>
-            )}
-            
-            {coupleData.pinOnPosts && !postsUnlocked ? (
-              <div className="soft-card p-10 text-center flex flex-col items-center justify-center bg-slate-950 text-white border-none shadow-2xl">
-                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                </div>
-                <h3 className="text-xl font-bold mb-2">Memórias Protegidas</h3>
-                <p className="text-slate-400 text-sm mb-6 max-w-xs">Este feed exige o seu PIN de segurança para ser visualizado.</p>
-                <button 
-                  onClick={() => {
-                    const pin = prompt('Digite o PIN de segurança:')
-                    // Aqui pegamos o pinCode que está nos settings da sala
-                    if (pin === coupleData.pinCode) {
-                      setPostsUnlocked(true)
-                    } else {
-                      alert('PIN incorreto')
-                    }
-                  }}
-                  className="px-8 py-3 bg-white text-slate-950 rounded-full font-bold text-sm hover:scale-105 transition-transform"
+                    <div className="space-y-4">
+                       <div className="soft-card p-8 text-center bg-white/50 dark:bg-white/5 border-dashed">
+                          <div className="w-12 h-12 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </div>
+                          <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Resumo do Dia</p>
+                          <p className="text-xs text-slate-400 mt-2">Visite a Timeline para ver as últimas fotos e marcos registrados.</p>
+                       </div>
+                    </div>
+                  </section>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="radar"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="max-w-4xl mx-auto"
                 >
-                  Desbloquear Feed
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {posts.map(p => (
-                  <PostCard key={p.id} post={p} settings={coupleData} />
-                ))}
-              </div>
-            )}
-          </section>
-        </section>
-      </motion.div>
-    ) : (
-      <motion.div 
-        key="radar"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.2 }}
-        className="max-w-4xl mx-auto"
-      >
-        <div className="soft-card p-6 min-h-[500px]">
-          <div className="mb-4">
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500 mb-1">Nosso Mapa</p>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Onde estamos agora?</h2>
-          </div>
-          <LocationCard coupleId={profile?.coupleId} />
-          
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Dica de Privacidade</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">As localizações são compartilhadas apenas entre vocês dois. O histórico não é armazenado permanentemente.</p>
-            </div>
-            <div className="p-4 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-2">Life360 Style</p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400">Toque no marcador para ver os detalhes de endereço e bateria do seu amor.</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    )}
-  </AnimatePresence>
-</main>
-</>
-)}
-</div>
-)
+                  <div className="soft-card p-6 min-h-[500px]">
+                    <div className="mb-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500 mb-1">Nosso Mapa</p>
+                      <h2 className="text-2xl font-black text-slate-900 dark:text-white">Onde estamos agora?</h2>
+                    </div>
+                    <LocationCard coupleId={profile?.coupleId} />
+                    
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                      <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Dica de Privacidade</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">As localizações são compartilhadas apenas entre vocês dois. O histórico não é armazenado permanentemente.</p>
+                      </div>
+                      <div className="p-4 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-2">Life360 Style</p>
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400">Toque no marcador para ver os detalhes de endereço e bateria do seu amor.</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
+        </>
+      )}
+    </div>
+  )
 }
