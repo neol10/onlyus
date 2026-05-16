@@ -113,7 +113,7 @@ export default function LocationCard({ coupleId }) {
         if (markersRef.current[id]) {
           markersRef.current[id].setLatLng([loc.lat, loc.lng])
         } else {
-          markersRef.current[id] = L.marker([loc.lat, loc.lng], { icon: createIcon(info?.settings?.pinPhoto || info?.photoURL, isMe) }).addTo(L_map)
+          markersRef.current[id] = L.marker([loc.lat, loc.lng], { icon: createIcon(info?.settings?.radarPhoto || info?.photoURL, isMe) }).addTo(L_map)
         }
       }
 
@@ -152,7 +152,7 @@ export default function LocationCard({ coupleId }) {
           <div className="relative">
             <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg border-2 border-rose-500/20">
               <img 
-                src={partnerInfo?.settings?.pinPhoto || partnerInfo?.photoURL || 'https://ui-avatars.com/api/?name=Amor'} 
+                src={partnerInfo?.settings?.radarPhoto || partnerInfo?.photoURL || 'https://ui-avatars.com/api/?name=Amor'} 
                 className="w-full h-full object-cover"
               />
             </div>

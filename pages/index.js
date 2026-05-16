@@ -182,7 +182,7 @@ export default function Home() {
           <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
             <LocationCard coupleId={profile?.coupleId} />
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Live Presence</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Live Presence</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -195,7 +195,7 @@ export default function Home() {
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">Seu Humor</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">Seu Humor</p>
                   <div className="flex items-center gap-2 relative">
                     <button 
                       onClick={() => setShowMoodSelector(!showMoodSelector)}
@@ -225,13 +225,13 @@ export default function Home() {
                 </div>
                 <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
                 <div className="text-right">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">{coupleData.partnerNick}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">{coupleData.partnerNick}</p>
                   <span className="text-3xl drop-shadow-md">{coupleData.partnerMood}</span>
                 </div>
               </div>
             </div>
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Total de Memórias</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Total de Memórias</p>
               <p className="mt-1 text-lg font-semibold text-[var(--ou-accent)]">{posts.length} momentos gravados</p>
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function Home() {
             <NewPostForm />
             <ThrowbackCard posts={posts} />
             <div className="soft-card p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Dica</p>
+              <p className="text-sm font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Dica</p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">Toque no botão de coração flutuante a qualquer momento para enviar uma animação carinhosa de surpresa.</p>
             </div>
           </div>

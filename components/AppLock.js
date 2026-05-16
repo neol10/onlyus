@@ -113,10 +113,10 @@ export default function AppLock({ children }) {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950 overflow-hidden touch-none"
           >
-            {settings.pinPhoto && (
+            {settings.vaultPhoto && (
               <div 
                 className="absolute inset-0 z-0 opacity-30 blur-md bg-cover bg-center"
-                style={{ backgroundImage: `url(${settings.pinPhoto})` }}
+                style={{ backgroundImage: `url(${settings.vaultPhoto})` }}
               />
             )}
 

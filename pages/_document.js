@@ -38,7 +38,7 @@ export default function Document() {
           }}
         />
       </Head>
-      <body>
+      <body className="bg-slate-950">
         <Main />
         <NextScript />
       </body>

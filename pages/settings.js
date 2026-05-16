@@ -24,7 +24,8 @@ const DEFAULT_SETTINGS = {
   pinOnPosts: false,
   pinEnabled: false,
   pinCode: '',
-  pinPhoto: '',
+  radarPhoto: '',
+  vaultPhoto: '',
   biometricsEnabled: false,
   biometricCredentialId: '',
   displayName: '',
@@ -458,8 +459,8 @@ export default function SettingsPage() {
                 <div className="sm:col-span-2 pt-2">
                   <label className="field-label text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 block">Foto do Radar (Pin no Mapa)</label>
                   <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 dark:bg-white/10 flex-shrink-0 border-2 border-indigo-500/20 shadow-inner">
-                       <img src={settings?.pinPhoto || 'https://ui-avatars.com/api/?name=Radar'} className="w-full h-full object-cover" />
+                     <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 dark:bg-white/10 flex-shrink-0 border-2 border-indigo-500/20 shadow-inner">
+                       <img src={settings?.radarPhoto || 'https://ui-avatars.com/api/?name=Radar'} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1">
                       <p className="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-tight">Esta foto aparecerá para o seu parceiro no Life360.</p>
@@ -478,7 +479,7 @@ export default function SettingsPage() {
                               const res = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', { method: 'POST', body: formData })
                               const data = await res.json()
                               if (data.secure_url) {
-                                updateSetting('pinPhoto', data.secure_url)
+                                updateSetting('radarPhoto', data.secure_url)
                                 showToast('Foto do radar atualizada! 📍')
                               }
                             } catch (err) { showToast('Erro no upload.', 'error') }
@@ -551,7 +552,7 @@ export default function SettingsPage() {
                               const res = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', { method: 'POST', body: formData })
                               const data = await res.json()
                               if (data.secure_url) {
-                                updateSetting('pinPhoto', data.secure_url)
+                                updateSetting('vaultPhoto', data.secure_url)
                                 showToast('Foto do cofre atualizada! 📸')
                               }
                             } catch (err) { showToast('Erro no upload da foto.', 'error') }

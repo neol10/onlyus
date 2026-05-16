@@ -95,14 +95,26 @@ export default function MusicCard({ coupleId }) {
             exit={{ opacity: 0, y: -5 }}
             className="space-y-2"
           >
-            <input 
-              type="text"
-              placeholder="Sua mensagem (ex: Nossa parte em 01:20)"
-              value={musicNote}
-              onChange={(e) => setMusicNote(e.target.value)}
-              maxLength={40}
-              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-            />
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                placeholder="Mensagem (ex: Nossa parte)"
+                value={musicNote}
+                onChange={(e) => setMusicNote(e.target.value)}
+                maxLength={40}
+                className="flex-[2] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              />
+              <input 
+                type="text"
+                placeholder="Início (ex: 01:20)"
+                value={musicUrl.includes('&t=') ? musicUrl.split('&t=')[1] : ''}
+                onChange={(e) => {
+                  const base = musicUrl.split('&t=')[0]
+                  setMusicUrl(e.target.value ? `${base}&t=${e.target.value}` : base)
+                }}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              />
+            </div>
             <input 
               type="text"
               placeholder="Link da música no Spotify..."
@@ -135,15 +147,16 @@ export default function MusicCard({ coupleId }) {
             )}
 
             {trackId ? (
-              <div className="rounded-xl overflow-hidden shadow-inner border border-white/10">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black/5">
                 <iframe 
-                  src={`https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`} 
+                  src={`https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0${musicUrl.includes('&t=') ? `&t=${musicUrl.split('&t=')[1]}` : ''}`} 
                   width="100%" 
-                  height="80" 
+                  height="152" 
                   frameBorder="0" 
                   allowFullScreen="" 
                   allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
                   loading="lazy"
+                  className="rounded-2xl"
                 />
               </div>
             ) : (

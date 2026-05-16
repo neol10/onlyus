@@ -10,6 +10,7 @@ import { doc, onSnapshot } from 'firebase/firestore'
 
 function AppInner({ Component, pageProps }) {
   const { user, loading } = useAuth()
+  const { showToast } = useToast()
   const router = useRouter()
   
   useEffect(() => {
@@ -58,6 +59,10 @@ function AppInner({ Component, pageProps }) {
               const notif = nSnap.data()
               // Só mostra se for recente (últimos 30 segundos) e não for do próprio autor
               if (notif.timestamp > Date.now() - 30000 && notif.from !== user.uid) {
+                // 1. Toast In-App
+                showToast(notif.message, notif.type === 'streak' ? 'success' : 'info')
+
+                // 2. Notificação de Sistema
                 if (typeof window !== 'undefined' && Notification.permission === 'granted') {
                   new Notification('OnlyUs ❤️', { 
                     body: notif.message, 
@@ -90,27 +95,30 @@ function AppInner({ Component, pageProps }) {
         </div>
 
         <motion.div 
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 text-center"
         >
-          <div className="relative inline-block mb-8">
-            {/* Efeito de Glow atrás da logo */}
-            <div className="absolute inset-0 bg-[var(--ou-accent,#6366f1)] blur-[40px] opacity-40 animate-pulse" />
+          <div className="relative inline-block mb-10">
+            {/* Efeito de Glow Profundo */}
+            <div className="absolute inset-[-20px] bg-indigo-500/30 blur-[60px] rounded-full animate-pulse" />
+            <div className="absolute inset-[-20px] bg-rose-500/20 blur-[60px] rounded-full animate-pulse" style={{ animationDelay: '1.5s' }} />
             
-            <div className="relative w-24 h-24 bg-white dark:bg-slate-900 rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/20">
-              <span className="text-[var(--ou-accent,#6366f1)] text-4xl font-black tracking-tighter">OU</span>
+            <div className="relative w-28 h-28 bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-2xl rounded-[2.5rem] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-transparent to-rose-500/10" />
+              <span className="relative text-white text-5xl font-black tracking-tighter drop-shadow-2xl">OU</span>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h2 className="text-white text-2xl font-bold tracking-tight">OnlyUs</h2>
-            <div className="flex items-center justify-center gap-1.5">
-              <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-              <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+          <div className="space-y-4">
+            <h2 className="text-white text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">OnlyUs</h2>
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-1 h-1 bg-indigo-400 rounded-full animate-[bounce_1s_infinite]" />
+              <div className="w-1 h-1 bg-rose-400 rounded-full animate-[bounce_1s_infinite_0.2s]" />
+              <div className="w-1 h-1 bg-cyan-400 rounded-full animate-[bounce_1s_infinite_0.4s]" />
             </div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-4">Sincronizando seu universo</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.5em] mt-6 opacity-60">Sincronizando seu universo</p>
           </div>
         </motion.div>
       </div>

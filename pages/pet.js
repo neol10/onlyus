@@ -22,37 +22,60 @@ const FlameEffect = ({ streak, isLosing }) => {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <AnimatePresence>
+        {/* Fumaça (aparece se estiver perdendo ou tarde da noite) */}
+        {(isLosing || isLateNight) && [...Array(8)].map((_, i) => (
+          <motion.div
+            key={`smoke-${i}`}
+            initial={{ opacity: 0, y: 0, scale: 1 }}
+            animate={{ 
+              opacity: [0, 0.2, 0], 
+              y: -150, 
+              x: (Math.random() - 0.5) * 120,
+              scale: [1, 4] 
+            }}
+            transition={{ duration: 3, repeat: Infinity, delay: i * 0.4 }}
+            className="absolute w-8 h-8 bg-slate-400 rounded-full blur-xl"
+          />
+        ))}
+
         {!isLosing ? (
           // Fogo Ativo
-          [...Array(Math.min(streak + 3, 15))].map((_, i) => (
+          [...Array(Math.min(streak + 5, 20))].map((_, i) => (
             <motion.div
               key={`flame-${i}`}
               initial={{ opacity: 0, y: 0, scale: 1 }}
               animate={{ 
-                opacity: [0, 0.7, 0], 
-                y: -100 - (Math.random() * 50), 
-                x: (Math.random() - 0.5) * 60,
-                scale: [1, 1.5, 0.5]
+                opacity: [0, 0.8, 0], 
+                y: -120 - (Math.random() * 80), 
+                x: (Math.random() - 0.5) * 80,
+                scale: [1, 2, 0.5]
               }}
               transition={{ 
-                duration: 1 + Math.random(), 
+                duration: 0.8 + Math.random(), 
                 repeat: Infinity, 
-                delay: i * 0.1 
+                delay: i * 0.05 
               }}
-              className={`absolute w-4 h-4 rounded-full blur-md ${
-                isLateNight ? 'bg-slate-500' : (streak > 10 ? 'bg-cyan-400' : 'bg-orange-500')
+              className={`absolute w-5 h-5 rounded-full blur-md ${
+                isLateNight 
+                  ? 'bg-gradient-to-t from-slate-600 to-slate-400 opacity-40' 
+                  : (streak > 10 ? 'bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'bg-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]')
               }`}
             />
           ))
         ) : (
-          // Fumaça de Perda
-          [...Array(10)].map((_, i) => (
+          // Fogo Morrendo (Brasas)
+          [...Array(15)].map((_, i) => (
             <motion.div
-              key={`smoke-${i}`}
+              key={`dying-${i}`}
               initial={{ opacity: 0, y: 0 }}
-              animate={{ opacity: [0, 0.3, 0], y: -120, x: (Math.random() - 0.5) * 100, scale: [1, 3] }}
-              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-              className="absolute w-6 h-6 bg-slate-400 rounded-full blur-lg"
+              animate={{ 
+                opacity: [0, 1, 0], 
+                y: -40, 
+                x: (Math.random() - 0.5) * 40,
+                scale: [0, 1, 0]
+              }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+              className="absolute w-2 h-2 bg-red-600 rounded-full blur-[1px]"
             />
           ))
         )}
@@ -91,7 +114,18 @@ export default function PetPage() {
 
         if (pet.lastMissionDate !== todayKey && pet.lastMissionDate !== yesterdayKey && pet.lastMissionDate !== '') {
           if (pet.streak > 0) {
-            showToast('A chama apagou... 😢 Cuide mais do bixinho!', 'error')
+            const msg = 'A chama apagou... 😢 Cuide mais do bixinho!'
+            showToast(msg, 'error')
+            
+            // Notifica o parceiro sobre a perda
+            const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+            setDoc(notifRef, {
+              from: 'system',
+              message: msg,
+              timestamp: Date.now(),
+              type: 'streak_lost'
+            })
+
             pet.streak = 0
             pet.hunger = 20
             pet.love = 20
@@ -101,8 +135,22 @@ export default function PetPage() {
         // Verificar urgência (após as 20h se missão não completa)
         const isMissionDone = pet.interactions?.[todayKey] && 
                              Object.keys(pet.interactions[todayKey]).length === 2
+        
         if (now.getHours() >= 20 && !isMissionDone) {
           setIsUrgent(true)
+          
+          // Notificação de urgência (apenas uma vez por dia)
+          const lastUrgent = localStorage.getItem(`urgent-notif-${todayKey}`)
+          if (!lastUrgent) {
+            const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
+            setDoc(notifRef, {
+              from: 'system',
+              message: '🚨 SOS! Nossa chama está quase apagando! Vamos cuidar do bixinho? 🚨',
+              timestamp: Date.now(),
+              type: 'streak_urgent'
+            })
+            localStorage.setItem(`urgent-notif-${todayKey}`, 'true')
+          }
         } else {
           setIsUrgent(false)
         }
