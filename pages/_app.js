@@ -82,14 +82,14 @@ function AppInner({ Component, pageProps }) {
 
   return (
     <AppLock>
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         <motion.div
           key={router.pathname}
-          initial={{ opacity: 0, x: 5 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -5 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="min-h-screen will-change-transform"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.1, ease: 'linear' }}
+          className="min-h-screen"
         >
           <Component {...pageProps} />
         </motion.div>
