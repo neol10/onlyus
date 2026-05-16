@@ -267,17 +267,17 @@ export default function SettingsPage() {
     <div className="min-h-screen">
       <NavBar />
       <main className="page-shell">
-        <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-end">
-          <div className="soft-card p-6 sm:p-8">
-            <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]" style={{ borderRadius: '999px' }}>
+        <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.6fr] lg:items-stretch">
+          <div className="soft-card p-6 sm:p-10 flex flex-col justify-center">
+            <span className="theme-pill inline-flex items-center px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-[0.24em] w-fit" style={{ borderRadius: '999px' }}>
               Configurações
             </span>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Personalize o espaço de vocês.</h1>
-            <p className="section-subtitle">
+            <h1 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.1]">Personalize o espaço de vocês.</h1>
+            <p className="mt-4 text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium max-w-xl">
               Ajuste tema, cores, intensidade visual e preferências do app para deixar o OnlyUs com a identidade do casal.
             </p>
           </div>
-          <div className="soft-card p-5 flex flex-col justify-between">
+          <div className="soft-card p-6 sm:p-8 flex flex-col justify-between bg-white/40 dark:bg-slate-900/40">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Ações</p>
               <p className="mt-2 text-xs text-slate-400">{savedAt ? `Salvo às ${savedAt}` : 'Alterações pendentes'}</p>
@@ -333,20 +333,20 @@ export default function SettingsPage() {
 
           <section className="space-y-6">
             <div className="soft-card p-6 sm:p-7">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Identidade visual</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 mb-4">Temas Predefinidos</p>
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
                 {THEME_OPTIONS.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => updateSetting('theme', option)}
-                    className={`group overflow-hidden rounded-2xl border text-left transition hover:-translate-y-0.5 ${settings.theme === option ? 'border-transparent' : 'border-slate-200'}`}
+                    className={`group overflow-hidden rounded-2xl border text-left transition-all active:scale-95 ${settings.theme === option ? 'border-transparent' : 'border-slate-200 dark:border-white/10'}`}
                     style={settings.theme === option ? SELECTED_STYLE : undefined}
                   >
-                    <div className={`h-16 bg-gradient-to-br ${THEME_PREVIEWS[option]}`} />
-                    <div className="px-3 py-2" style={{ background: 'linear-gradient(145deg, var(--ou-card-bg, rgba(255,255,255,0.96)), rgba(255,255,255,0.84))' }}>
-                      <p className="text-sm font-semibold text-slate-900">{option}</p>
-                      <p className={`text-xs font-semibold ${settings.theme === option ? 'text-emerald-500' : 'text-slate-500'}`}>{settings.theme === option ? 'Selecionado' : 'Aplicar'}</p>
+                    <div className={`h-12 sm:h-16 bg-gradient-to-br ${THEME_PREVIEWS[option]}`} />
+                    <div className="px-3 py-2 bg-white dark:bg-slate-900">
+                      <p className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-white truncate">{option}</p>
+                      <p className={`text-[9px] font-bold uppercase tracking-tighter ${settings.theme === option ? 'text-emerald-500' : 'text-slate-500'}`}>{settings.theme === option ? 'Ativo' : 'Usar'}</p>
                     </div>
                   </button>
                 ))}
@@ -354,13 +354,13 @@ export default function SettingsPage() {
               <div className="mt-5 grid gap-5 sm:grid-cols-2">
                 <div>
                   <label className="field-label">Tema</label>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {THEME_OPTIONS.map((option) => (
                       <button
                         key={option}
                         type="button"
                         onClick={() => updateSetting('theme', option)}
-                        className="rounded-xl border px-3 py-2 text-left text-sm font-semibold transition hover:-translate-y-0.5"
+                        className="rounded-xl border px-3 py-2 text-center text-xs font-bold transition hover:-translate-y-0.5 bg-white dark:bg-white/5"
                         style={settings.theme === option ? SELECTED_STYLE : { borderColor: 'var(--ou-border-soft, rgba(148,163,184,0.35))' }}
                       >
                         {option}
@@ -376,7 +376,7 @@ export default function SettingsPage() {
                         key={option}
                         type="button"
                         onClick={() => updateSetting('uiMode', option)}
-                        className="rounded-xl border px-3 py-2 text-left text-sm font-semibold transition hover:-translate-y-0.5"
+                        className="rounded-xl border px-3 py-2 text-center text-xs font-bold transition hover:-translate-y-0.5 bg-white dark:bg-white/5"
                         style={settings.uiMode === option ? SELECTED_STYLE : { borderColor: 'var(--ou-border-soft, rgba(148,163,184,0.35))' }}
                       >
                         {option}
@@ -386,10 +386,10 @@ export default function SettingsPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="field-label">Cor das superfícies</label>
-                  <div className="grid gap-2 sm:grid-cols-[110px_1fr]">
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-[110px_1fr]">
                     <input
                       type="color"
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-transparent"
+                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 bg-transparent p-1"
                       value={settings.surfaceHex || '#ffffff'}
                       onChange={(e) => {
                         updateSetting('surfaceTone', 'Personalizada')
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                     />
                     <input
                       type="text"
-                      className="field-input"
+                      className="field-input text-center sm:text-left"
                       placeholder="#ffffff"
                       value={settings.surfaceHex || '#ffffff'}
                       onChange={(e) => {
@@ -408,30 +408,36 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
-                <div>
-                   <label className="field-label">Intensidade do fundo</label>
-                   <input
-                     className="field-input"
-                     type="range"
-                     min="0"
-                     max="100"
-                     value={settings.backgroundIntensity}
-                     onChange={(e) => updateSetting('backgroundIntensity', Number(e.target.value))}
-                   />
-                   <p className="mt-2 text-xs text-slate-500">{settings.backgroundIntensity}%</p>
-                 </div>
-                 <div>
-                   <label className="field-label">Intensidade das animações</label>
-                   <input
-                     className="field-input"
-                     type="range"
-                     min="0"
-                     max="100"
-                     value={settings.motionIntensity}
-                     onChange={(e) => updateSetting('motionIntensity', Number(e.target.value))}
-                   />
-                   <p className="mt-2 text-xs text-slate-500">{settings.motionIntensity}%</p>
-                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:col-span-2">
+                  <div>
+                    <label className="field-label">Intensidade do fundo</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        className="flex-1 accent-indigo-500"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={settings.backgroundIntensity}
+                        onChange={(e) => updateSetting('backgroundIntensity', Number(e.target.value))}
+                      />
+                      <span className="text-xs font-black text-slate-500 w-8">{settings.backgroundIntensity}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="field-label">Animações</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        className="flex-1 accent-rose-500"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={settings.motionIntensity}
+                        onChange={(e) => updateSetting('motionIntensity', Number(e.target.value))}
+                      />
+                      <span className="text-xs font-black text-slate-500 w-8">{settings.motionIntensity}%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

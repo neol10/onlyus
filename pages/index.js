@@ -119,6 +119,8 @@ export default function Home() {
     }
   }
 
+  const [activeTab, setActiveTab] = useState('feed')
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -131,8 +133,9 @@ export default function Home() {
       </div>
     )
   }
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24">
       <NavBar />
       
       {!profile?.coupleId ? (
@@ -140,8 +143,38 @@ export default function Home() {
       ) : (
         <>
           <LovePing />
-          <main className="page-shell">
-            <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
+          <main className="page-shell pt-4">
+            {/* Tab Switcher */}
+            <div className="flex justify-center mb-8 sticky top-20 z-40 px-4">
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl flex gap-1 w-full max-w-md">
+                <button 
+                  onClick={() => setActiveTab('feed')}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'feed' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2v4a2 2 0 002 2h4" /></svg>
+                  Feed
+                </button>
+                <button 
+                  onClick={() => setActiveTab('radar')}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'radar' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  Radar
+                </button>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {activeTab === 'feed' ? (
+                <motion.div 
+                  key="feed"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
+
             <div className="flex flex-col gap-4">
               <div className="soft-card p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
               <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
@@ -180,7 +213,6 @@ export default function Home() {
           </div>
 
           <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
-            <LocationCard coupleId={profile?.coupleId} />
             <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden">
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Live Presence</p>
               <div className="mt-2 flex items-center gap-2">
@@ -286,9 +318,40 @@ export default function Home() {
             )}
           </section>
         </section>
-      </main>
-      </>
-      )}
-    </div>
-  )
+      </motion.div>
+    ) : (
+      <motion.div 
+        key="radar"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="max-w-4xl mx-auto"
+      >
+        <div className="soft-card p-6 min-h-[500px]">
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500 mb-1">Nosso Mapa</p>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Onde estamos agora?</h2>
+          </div>
+          <LocationCard coupleId={profile?.coupleId} />
+          
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Dica de Privacidade</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">As localizações são compartilhadas apenas entre vocês dois. O histórico não é armazenado permanentemente.</p>
+            </div>
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-2">Life360 Style</p>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400">Toque no marcador para ver os detalhes de endereço e bateria do seu amor.</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</main>
+</>
+)}
+</div>
+)
 }
