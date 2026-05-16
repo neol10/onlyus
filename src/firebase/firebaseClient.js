@@ -1,8 +1,8 @@
-// Placeholder Firebase client (modular SDK)
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
+import { getMessaging } from 'firebase/messaging'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,6 +19,7 @@ let app = null
 let auth = null
 let db = null
 let storage = null
+let messaging = null
 
 if (hasFirebaseConfig) {
   try {
@@ -26,6 +27,11 @@ if (hasFirebaseConfig) {
     auth = getAuth(app)
     db = getFirestore(app)
     storage = getStorage(app)
+    
+    // Messaging só pode ser inicializado no Browser
+    if (typeof window !== 'undefined') {
+      messaging = getMessaging(app)
+    }
   } catch (err) {
     console.warn('Firebase init warning:', err.message || err)
   }
@@ -33,4 +39,4 @@ if (hasFirebaseConfig) {
   console.warn('Firebase not configured. Create `.env.local` from `.env.local.example` and set your project values.')
 }
 
-export { auth, db, storage }
+export { auth, db, storage, messaging }

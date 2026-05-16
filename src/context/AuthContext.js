@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
-import { auth, db } from '../firebase/firebaseClient'
+import { auth, db, messaging } from '../firebase/firebaseClient'
+import { getToken } from 'firebase/messaging'
+import { updateDoc } from 'firebase/firestore'
 
 const AuthContext = createContext({ user: null, profile: null, loading: true })
 
@@ -13,6 +15,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const requestFCMToken = async (u) => {
+    if (!messaging || !u || typeof window === 'undefined') return
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission === 'granted') {
+        const token = await getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+        })
+        if (token) {
+          const userRef = doc(db, 'users', u.uid)
+          await updateDoc(userRef, { fcmToken: token })
+        }
+      }
+    } catch (err) {
+      console.warn('FCM Token error:', err)
+    }
+  }
 
   useEffect(() => {
     if (!auth) {
@@ -26,8 +46,12 @@ export function AuthProvider({ children }) {
       setUser(u)
       
       if (typeof window !== 'undefined') {
-        if (u?.uid) window.localStorage.setItem('onlyus-active-user-id', u.uid)
-        else window.localStorage.removeItem('onlyus-active-user-id')
+        if (u?.uid) {
+          window.localStorage.setItem('onlyus-active-user-id', u.uid)
+          requestFCMToken(u)
+        } else {
+          window.localStorage.removeItem('onlyus-active-user-id')
+        }
       }
 
       if (u && db) {
