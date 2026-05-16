@@ -6,10 +6,10 @@ import { db } from '../src/firebase/firebaseClient'
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 
 const PET_TYPES = {
-  cat: { emoji: '🐱', color: 'from-orange-400 to-red-500', name: 'Gatinho' },
-  dog: { emoji: '🐶', color: 'from-blue-400 to-indigo-500', name: 'Cachorrinho' },
-  rabbit: { emoji: '🐰', color: 'from-pink-400 to-rose-500', name: 'Coelhinho' },
-  bear: { emoji: '🐻', color: 'from-amber-600 to-orange-800', name: 'Ursinho' }
+  cat: { img: '/pets/cat.png', color: 'from-orange-400 to-red-500', name: 'Gatinho' },
+  dog: { img: '/pets/dog.png', color: 'from-blue-400 to-indigo-500', name: 'Cachorrinho' },
+  rabbit: { img: '/pets/rabbit.png', color: 'from-pink-400 to-rose-500', name: 'Coelhinho' },
+  bear: { img: '/pets/bear.png', color: 'from-amber-600 to-orange-800', name: 'Ursinho' }
 }
 
 export default function PetPage() {
@@ -180,53 +180,56 @@ export default function PetPage() {
           <motion.div
             key={petData.type + petData.level}
             animate={{ 
-              // 1. Respiração + 2. Levitação
-              scale: [1, 1.05, 1],
+              // 1. Respiração Orgânica (Squash & Stretch)
+              scaleX: [1, 1.03, 1],
+              scaleY: [1, 0.97, 1],
+              
+              // 2. Levitação com balanço
               y: petData.hunger < 30 
-                ? [0, 3, 0, 3, 0] // 3. Tremor de Fome
-                : [0, -15, 0],    // 4. Flutuação Mágica
+                ? [0, 2, 0, 2, 0] // Tremor
+                : [0, -20, 0],    // Flutuação
               
-              // 5. Inclinação de Curiosidade
-              rotate: petData.love > 80 
-                ? [0, -5, 5, 0] 
-                : petData.hunger < 20 ? [-2, 2, -2, 2, 0] : 0,
+              // 3. Inclinação de peso
+              rotate: petData.hunger < 20 ? [-3, 3, -3, 3, 0] : [0, -2, 2, 0],
               
-              // 6. Efeito de "Pulo" em ações
-              filter: showHearts ? 'brightness(1.2)' : 'brightness(1)'
+              // 4. Brilho de felicidade
+              filter: showHearts ? 'brightness(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.5))' : 'brightness(1)'
             }}
-            whileTap={{ scale: 0.8, rotate: 15 }} // 7. Reação ao toque
+            whileTap={{ scale: 0.9, rotate: -5, y: 10 }} 
             transition={{ 
               repeat: Infinity, 
-              duration: petData.hunger < 30 ? 0.3 : 3,
+              duration: petData.hunger < 30 ? 0.2 : 4,
               ease: "easeInOut"
             }}
             className="relative z-10 cursor-pointer select-none"
           >
-            <span className="text-[150px] sm:text-[190px] block drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-              {PET_TYPES[petData.type || 'cat']?.emoji || '🐱'}
-            </span>
+            <img 
+              src={PET_TYPES[petData.type || 'cat']?.img} 
+              alt="Pet"
+              className="w-64 h-64 sm:w-80 sm:h-80 object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)]"
+            />
 
-            {/* 8. Balão de Pensamento Dinâmico */}
+            {/* Balão de Fome Premium */}
             {petData.hunger < 40 && (
               <motion.div
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute -top-8 -right-8 bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-xl border border-slate-100 dark:border-white/10"
+                initial={{ opacity: 0, scale: 0, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="absolute top-10 -right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white/20"
               >
-                <span className="text-2xl">🍲</span>
+                <span className="text-3xl">🍲</span>
               </motion.div>
             )}
           </motion.div>
 
-          {/* 9. Sombra Dinâmica + 10. Pulsar de Felicidade */}
+          {/* Sombra 3D Perspectiva */}
           <motion.div 
             animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.1, 0.2, 0.1],
-              width: [120, 150, 120]
+              scale: [1, 1.3, 1],
+              opacity: [0.15, 0.05, 0.15],
+              width: [180, 220, 180]
             }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="h-6 bg-black/20 dark:bg-white/10 blur-xl rounded-full mt-[-25px]"
+            transition={{ repeat: Infinity, duration: 4 }}
+            className="h-8 bg-black/30 blur-2xl rounded-[100%] mt-[-40px]"
           ></motion.div>
         </div>
 
@@ -236,16 +239,16 @@ export default function PetPage() {
             type="text"
             value={petData.name}
             onChange={e => updatePet({ name: e.target.value })}
-            className="bg-transparent text-3xl font-black text-center text-slate-900 dark:text-white focus:outline-none"
+            className="bg-transparent text-4xl font-black text-center text-slate-900 dark:text-white focus:outline-none mb-2"
           />
-          <div className="flex justify-center gap-2 mt-4">
+          <div className="flex justify-center gap-4 mt-6">
             {Object.entries(PET_TYPES).map(([id, info]) => (
               <button 
                 key={id}
                 onClick={() => updatePet({ type: id })}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${petData.type === id ? 'bg-white shadow-md scale-110 ring-2 ring-indigo-500' : 'bg-slate-200 dark:bg-white/5 opacity-50'}`}
+                className={`w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center transition-all ${petData.type === id ? 'bg-white shadow-xl scale-125 ring-4 ring-indigo-500' : 'bg-slate-200 dark:bg-white/5 opacity-40 grayscale hover:grayscale-0 hover:opacity-100'}`}
               >
-                {info.emoji}
+                <img src={info.img} className="w-10 h-10 object-contain" />
               </button>
             ))}
           </div>
