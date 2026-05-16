@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AnimatePresence, motion } from 'framer-motion'
 import NavBar from '../components/NavBar'
 import PostCard from '../components/PostCard'
 import NewPostForm from '../components/NewPostForm'
