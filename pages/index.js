@@ -19,6 +19,9 @@ export default function Home() {
   const [coupleData, setCoupleData] = useState({ relationshipDate: '', myMood: '🥰', pinOnPosts: false, blurPhotos: false, pinCode: '' })
   const [isEditingDate, setIsEditingDate] = useState(false)
   const [postsUnlocked, setPostsUnlocked] = useState(false)
+  const [showMoodSelector, setShowMoodSelector] = useState(false)
+
+  const MOOD_OPTIONS = ['🥰', '❤️', '😊', '🤩', '😴', '😢', '😤', '🥺', '🤯', '🥵']
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
@@ -184,17 +187,31 @@ export default function Home() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">Seu Humor</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl drop-shadow-md">{coupleData.myMood}</span>
+                  <div className="flex items-center gap-2 relative">
                     <button 
-                      onClick={() => {
-                        const emoji = prompt('Escolha seu emoji de hoje:')
-                        if (emoji) saveCoupleData({ myMood: emoji })
-                      }}
-                      className="text-xs text-slate-400 hover:text-[var(--ou-accent)]"
+                      onClick={() => setShowMoodSelector(!showMoodSelector)}
+                      className="text-3xl drop-shadow-md hover:scale-110 transition-transform active:scale-95"
                     >
-                      ✏️
+                      {coupleData.myMood}
                     </button>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Alterar</span>
+
+                    {showMoodSelector && (
+                      <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 grid grid-cols-5 gap-2 w-48 animate-in fade-in zoom-in duration-200">
+                        {MOOD_OPTIONS.map(emoji => (
+                          <button 
+                            key={emoji}
+                            onClick={() => {
+                              saveCoupleData({ myMood: emoji })
+                              setShowMoodSelector(false)
+                            }}
+                            className="text-2xl hover:bg-slate-100 dark:hover:bg-white/5 p-1 rounded-lg transition-colors"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
@@ -252,9 +269,11 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              posts.map(p => (
-                <PostCard key={p.id} post={p} settings={coupleData} />
-              ))
+              <div className="space-y-4">
+                {posts.map(p => (
+                  <PostCard key={p.id} post={p} settings={coupleData} />
+                ))}
+              </div>
             )}
           </section>
         </section>

@@ -146,7 +146,9 @@ export default function PostCard({ post = {}, settings = {} }) {
               <img 
                 src={src} 
                 alt={`imagem-${i}`} 
-                className={`max-h-[520px] w-full object-cover shadow-lg shadow-slate-950/10 ring-1 ring-white/50 transition-all duration-500 ${isBlurred ? 'blur-2xl scale-110 cursor-pointer' : 'blur-0 scale-100'}`} 
+                loading="lazy"
+                decoding="async"
+                className={`max-h-[520px] w-full object-cover shadow-lg shadow-slate-950/10 ring-1 ring-white/50 transition-all duration-500 will-change-transform ${isBlurred ? 'blur-2xl scale-110 cursor-pointer' : 'blur-0 scale-100'}`} 
               />
               {isBlurred && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm cursor-pointer">
