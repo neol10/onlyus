@@ -1,11 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../src/context/AuthContext'
+import { db } from '../src/firebase/firebaseClient'
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 
 export default function PostCard({ post = {}, settings = {} }) {
-  const { user } = useAuth()
-  const { caption = '', images = [], authorId = null, isBlurred: postBlurred = false, isLocked: postLocked = false } = post
+  const { user, profile } = useAuth()
+  const { 
+    id: postId, 
+    caption = '', 
+    images = [], 
+    authorId = null, 
+    isBlurred: postBlurred = false, 
+    isLocked: postLocked = false,
+    likes = [],
+    comments = []
+  } = post
   const [isBlurred, setIsBlurred] = useState(postBlurred || settings.blurPhotos || false)
   const [unlocked, setUnlocked] = useState(!postLocked)
+  const [showComments, setShowComments] = useState(false)
+  const [newComment, setNewComment] = useState('')
+  const [isLiking, setIsLiking] = useState(false)
 
   useEffect(() => {
     setIsBlurred(postBlurred || settings.blurPhotos || false)
@@ -76,12 +90,97 @@ export default function PostCard({ post = {}, settings = {} }) {
           ))}
         </div>
       )}
-      <footer className="mt-5 flex items-center justify-between border-t px-5 py-4 text-sm text-slate-500" style={{ borderColor: 'color-mix(in srgb, var(--ou-accent-soft, rgba(99,102,241,0.14)) 50%, rgba(255,255,255,0.72))' }}>
-        <div className="flex items-center gap-4">
-          <span>Curtir</span>
-          <span>Comentar</span>
+      <footer className="mt-5 border-t px-5 py-3" style={{ borderColor: 'color-mix(in srgb, var(--ou-accent-soft, rgba(99,102,241,0.14)) 50%, rgba(255,255,255,0.72))' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={async () => {
+                if (isLiking || !profile?.coupleId) return
+                setIsLiking(true)
+                const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
+                const hasLiked = likes.includes(user?.uid)
+                await updateDoc(postRef, {
+                  likes: hasLiked ? arrayRemove(user?.uid) : arrayUnion(user?.uid)
+                })
+                setIsLiking(false)
+              }}
+              className={`flex items-center gap-2 text-sm font-bold transition-colors ${likes.includes(user?.uid) ? 'text-rose-500' : 'text-slate-500 hover:text-rose-500'}`}
+            >
+              <svg className={`h-5 w-5 ${likes.includes(user?.uid) ? 'fill-current' : 'fill-none stroke-current stroke-2'}`} viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <span>{likes.length || 0}</span>
+            </button>
+
+            <button 
+              onClick={() => setShowComments(!showComments)}
+              className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-500 transition-colors"
+            >
+              <svg className="h-5 w-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+              </svg>
+              <span>{comments.length || 0}</span>
+            </button>
+          </div>
+          <span className="theme-pill px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest" style={{ borderRadius: '999px' }}>Memória</span>
         </div>
-        <span className="theme-pill px-3 py-1 text-xs font-semibold text-slate-600" style={{ borderRadius: '999px' }}>Compartilhado</span>
+
+        {showComments && (
+          <div className="mt-4 space-y-4 pt-4 border-t border-slate-100 dark:border-white/5">
+            <div className="space-y-3">
+              {comments.map((c, i) => (
+                <div key={i} className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">{c.authorName}:</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{c.text}</span>
+                  </div>
+                  <span className="text-[9px] text-slate-400 uppercase">{new Date(c.timestamp).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <input 
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escreva um comentário..."
+                className="flex-1 bg-slate-50 dark:bg-white/5 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && newComment.trim() && profile?.coupleId) {
+                    const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
+                    await updateDoc(postRef, {
+                      comments: arrayUnion({
+                        text: newComment,
+                        authorId: user.uid,
+                        authorName: profile.displayName || 'Amor',
+                        timestamp: Date.now()
+                      })
+                    })
+                    setNewComment('')
+                  }
+                }}
+              />
+              <button 
+                onClick={async () => {
+                  if (!newComment.trim() || !profile?.coupleId) return
+                  const postRef = doc(db, 'couples', profile.coupleId, 'posts', postId)
+                  await updateDoc(postRef, {
+                    comments: arrayUnion({
+                      text: newComment,
+                      authorId: user.uid,
+                      authorName: profile.displayName || 'Amor',
+                      timestamp: Date.now()
+                    })
+                  })
+                  setNewComment('')
+                }}
+                className="bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold"
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        )}
       </footer>
     </article>
   )
