@@ -102,8 +102,12 @@
   }
 
   .page-shell {
-    @apply mx-auto w-full max-w-7xl px-4 pb-24 pt-4 sm:px-6 lg:px-8 sm:pb-10;
+    @apply mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 sm:pb-12 sm:pt-8;
     position: relative;
+  }
+
+  .nav-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
   .page-shell::before {

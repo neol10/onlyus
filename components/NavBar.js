@@ -42,7 +42,7 @@ export default function NavBar() {
   return (
     <>
       <header className="topbar-shell hidden sm:block">
-        <div className="page-shell flex items-center justify-between gap-4 py-3 sm:py-4">
+        <div className="nav-container flex items-center justify-between gap-4 py-3 sm:py-4">
           <Link href="/" className="group flex items-center gap-2">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 transition-colors group-hover:text-[var(--ou-accent,#4f46e5)]">OnlyUs</span>
           </Link>
@@ -82,7 +82,7 @@ export default function NavBar() {
 
       {/* Header Mobile Simplificado */}
       <header className="topbar-shell sm:hidden">
-        <div className="page-shell flex items-center justify-between gap-4 py-3">
+        <div className="nav-container flex items-center justify-between gap-4 py-3">
           <Link href="/" className="flex items-center">
             <span className="text-xl font-bold tracking-tight text-slate-900">OnlyUs</span>
           </Link>
