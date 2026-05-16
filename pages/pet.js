@@ -38,7 +38,8 @@ export default function PetPage() {
           love: 100, 
           streak: 0,
           lastMissionDate: '', // Data da última vez que a missão dupla foi completa
-          interactions: {}, // { [date]: { [uid]: 'feed'|'love' } }
+          interactions: {}, // { [date]: { [uid]: 'feed'|'love' } },
+          hue: 0, // Matiz customizada do pet
           ...(data.pet || {})
         }
 
@@ -232,7 +233,12 @@ export default function PetPage() {
             className="relative z-10 cursor-pointer select-none"
           >
             <div className="relative">
-              <span className="text-[120px] sm:text-[180px] md:text-[220px] filter drop-shadow-2xl select-none">
+              <span 
+                className="text-[120px] sm:text-[180px] md:text-[220px] select-none inline-block transition-all duration-700"
+                style={{ 
+                  filter: `hue-rotate(${petData.hue || 0}deg) drop-shadow(0 0 30px rgba(255,255,255,0.2))` 
+                }}
+              >
                 {PET_TYPES[petData.type || 'cat']?.emoji}
               </span>
               
@@ -271,10 +277,23 @@ export default function PetPage() {
           <input 
             type="text"
             value={petData.name}
-            onChange={e => updatePet({ name: e.target.value })}
+            onChange={e => updatePet({ ...petData, name: e.target.value })}
             className="bg-transparent text-3xl sm:text-4xl font-black text-center text-slate-900 dark:text-white focus:outline-none mb-2 w-full max-w-xs"
           />
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-6">
+          
+          <div className="mt-4 flex flex-col items-center gap-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Personalizar Cor</p>
+            <input 
+              type="range" 
+              min="0" 
+              max="360" 
+              value={petData.hue || 0} 
+              onChange={(e) => updatePet({ ...petData, hue: parseInt(e.target.value) })}
+              className="w-48 h-2 bg-gradient-to-r from-red-500 via-green-500 via-blue-500 to-red-500 rounded-full appearance-none cursor-pointer"
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-8">
             {Object.entries(PET_TYPES).map(([id, info]) => (
               <button 
                 key={id}
@@ -290,7 +309,11 @@ export default function PetPage() {
         {/* Ações de Cuidado */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="soft-card p-5 sm:p-6 flex flex-col items-center gap-4">
-             <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+             <div className="w-full flex justify-between items-center px-1">
+                <span className="text-[10px] font-black uppercase text-amber-600">Fome</span>
+                <span className="text-[10px] font-bold text-slate-400">{petData.hunger}%</span>
+             </div>
+             <div className="w-full h-3 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
                 <motion.div animate={{ width: `${petData.hunger}%` }} className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
              </div>
              <button 
@@ -300,7 +323,7 @@ export default function PetPage() {
              >
                Alimentar 🐟
              </button>
-              <p className="text-[10px] font-bold text-slate-400 text-center flex items-center gap-2">
+             <p className="text-[10px] font-bold text-slate-400 text-center flex items-center gap-2">
                {userAction === 'feed' ? (
                  <><span className="text-emerald-500">✅</span> Você alimentou</>
                ) : partnerAction === 'feed' ? (
@@ -312,12 +335,16 @@ export default function PetPage() {
           </div>
 
           <div className="soft-card p-5 sm:p-6 flex flex-col items-center gap-4">
-             <div className="w-full h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-                <motion.div animate={{ width: `${petData.love}%` }} className="h-full bg-pink-50 shadow-[0_0_10px_rgba(236,72,153,0.5)]" />
+             <div className="w-full flex justify-between items-center px-1">
+                <span className="text-[10px] font-black uppercase text-pink-600">Carinho</span>
+                <span className="text-[10px] font-bold text-slate-400">{petData.love}%</span>
+             </div>
+             <div className="w-full h-3 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                <motion.div animate={{ width: `${petData.love}%` }} className="h-full bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]" />
              </div>
              <button 
               onClick={() => handleAction('love')}
-              disabled={userAction === 'feed' || partnerAction === 'love'}
+              disabled={userAction !== undefined || partnerAction === 'love'}
               className="w-full py-4 rounded-2xl bg-pink-500 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-all hover:brightness-110 disabled:opacity-50 disabled:grayscale"
              >
                Dar Carinho 👋
@@ -329,6 +356,10 @@ export default function PetPage() {
                  <><span className="text-indigo-500">👤</span> O Amor deu carinho</>
                ) : (
                  <><span className="text-pink-500 animate-pulse">⏳</span> Pendente</>
+               )}
+             </p>
+          </div>
+        </div>imate-pulse">⏳</span> Pendente</>
                )}
              </p>
           </div>
