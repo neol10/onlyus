@@ -100,14 +100,18 @@ export default function PetPage() {
     await updatePet(updates)
   }
 
-  if (loading || !petData) return null
+  if (loading || !petData || !user) return null
 
-  const partnerId = profile.coupleId ? (petData.interactions ? Object.keys(petData.interactions).find(id => id !== user.uid) : null) : null
-  const partnerInteractions = partnerId ? petData.interactions[partnerId] : null
+  const interactions = petData.interactions || {}
+  const partnerId = profile?.coupleId ? Object.keys(interactions).find(id => id !== user.uid) : null
+  const partnerInteractions = partnerId ? interactions[partnerId] : null
   const today = new Date().toDateString()
   
-  const bothFed = (petData.interactions[user.uid]?.feed && petData.interactions[user.uid]?.lastDate === today) && 
-                  (partnerInteractions?.feed && partnerInteractions?.lastDate === today)
+  const userToday = interactions[user.uid] || {}
+  const partnerToday = partnerInteractions || {}
+
+  const bothFed = (userToday.feed && userToday.lastDate === today) && 
+                  (partnerToday.feed && partnerToday.lastDate === today)
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
@@ -206,7 +210,7 @@ export default function PetPage() {
                Alimentar 🐟
              </button>
              <p className="text-[10px] font-bold text-slate-400">
-               {petData.interactions[user.uid]?.feed && petData.interactions[user.uid]?.lastDate === today ? '✅ Você já alimentou' : '⏳ Sua vez'}
+               {userToday.feed && userToday.lastDate === today ? '✅ Você já alimentou' : '⏳ Sua vez'}
              </p>
           </div>
 
@@ -221,7 +225,7 @@ export default function PetPage() {
                Carinho 👋
              </button>
              <p className="text-[10px] font-bold text-slate-400">
-               {petData.interactions[user.uid]?.love && petData.interactions[user.uid]?.lastDate === today ? '✅ Você já deu carinho' : '⏳ Sua vez'}
+               {userToday.love && userToday.lastDate === today ? '✅ Você já deu carinho' : '⏳ Sua vez'}
              </p>
           </div>
         </div>
