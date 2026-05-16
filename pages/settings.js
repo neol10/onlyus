@@ -93,8 +93,11 @@ const PAIR_PRESETS = [
   { name: 'Solar', primary: '#f59e0b', secondary: '#ef4444' },
 ]
 
+import { useToast } from '../src/context/ToastContext'
+
 export default function SettingsPage() {
   const { user, profile, loading } = useAuth()
+  const { showToast } = useToast()
   const router = useRouter()
   const [settings, setSettings] = useState(null)
   const [localDisplayName, setLocalDisplayName] = useState('')
@@ -165,11 +168,11 @@ export default function SettingsPage() {
         setSavedAt(new Date().toLocaleTimeString())
       } catch (err) {
         console.error('Erro ao salvar:', err)
-        alert('Erro ao salvar. Tente novamente.')
+        showToast('Erro ao salvar. Tente novamente.', 'error')
       }
     }
     setSaving(false)
-    if (!explicitSettings) alert('Configurações salvas! ✨')
+    if (!explicitSettings) showToast('Configurações salvas! ✨')
   }
 
   // Função para Alternar Biometria (WebAuthn)
@@ -183,7 +186,7 @@ export default function SettingsPage() {
 
     try {
       if (!window.PublicKeyCredential) {
-        alert('Seu dispositivo não suporta biometria no navegador.')
+        showToast('Seu dispositivo não suporta biometria.', 'error')
         return
       }
 
@@ -218,7 +221,7 @@ export default function SettingsPage() {
         updateSetting('biometricsEnabled', true)
         updateSetting('biometricCredentialId', credentialId)
         
-        alert('Biometria configurada com sucesso! 🛡️')
+        showToast('Biometria configurada com sucesso! 🛡️')
         handleSave({ 
           ...settings, 
           biometricsEnabled: true, 
@@ -227,7 +230,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error('Erro biometria:', err)
-      alert('Verifique se seu dispositivo tem FaceID/Digital ativo e tente novamente.')
+      showToast('Ative o FaceID/Digital no seu celular e tente novamente.', 'error')
     }
   }
 
@@ -514,8 +517,11 @@ export default function SettingsPage() {
                               formData.append('upload_preset', 'etx8raxe')
                               const res = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', { method: 'POST', body: formData })
                               const data = await res.json()
-                              if (data.secure_url) updateSetting('pinPhoto', data.secure_url)
-                            } catch (err) { alert('Erro no upload') }
+                              if (data.secure_url) {
+                                updateSetting('pinPhoto', data.secure_url)
+                                showToast('Foto do cofre atualizada! 📸')
+                              }
+                            } catch (err) { showToast('Erro no upload da foto.', 'error') }
                           }
                         }}
                       />

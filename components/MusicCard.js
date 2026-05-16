@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { db } from '../src/firebase/firebaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useToast } from '../src/context/ToastContext'
+import { useAuth } from '../src/context/AuthContext'
 
 export default function MusicCard({ coupleId }) {
   const [musicUrl, setMusicUrl] = useState('')
@@ -38,6 +40,9 @@ export default function MusicCard({ coupleId }) {
     }
   }
 
+  const { showToast } = useToast()
+  const { user, profile } = useAuth()
+
   const handleSave = async () => {
     if (!coupleId) return
     const coupleRef = doc(db, 'couples', coupleId)
@@ -45,6 +50,17 @@ export default function MusicCard({ coupleId }) {
       musicOfDay: musicUrl,
       musicNote: musicNote
     })
+
+    // Envia Notificação para o Parceiro
+    const notifRef = doc(db, 'couples', coupleId, 'notifications', 'latest')
+    await setDoc(notifRef, {
+      from: user.uid,
+      message: `${profile.displayName || 'Seu Amor'} atualizou a Música do Dia! 🎵`,
+      timestamp: Date.now(),
+      type: 'music'
+    })
+
+    showToast('Música do dia atualizada! ❤️')
     setIsEditing(false)
   }
 

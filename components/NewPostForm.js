@@ -4,8 +4,11 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore'
 import { useAuth } from '../src/context/AuthContext'
 
+import { useToast } from '../src/context/ToastContext'
+
 export default function NewPostForm() {
   const { user, profile } = useAuth()
+  const { showToast } = useToast()
   const [caption, setCaption] = useState('')
   const [file, setFile] = useState(null)
   const [progress, setProgress] = useState(0)
@@ -20,8 +23,8 @@ export default function NewPostForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!file) return alert('Selecione uma imagem')
-    if (!profile?.coupleId) return alert('Você não está em uma sala de casal')
+    if (!file) return showToast('Selecione uma imagem', 'error')
+    if (!profile?.coupleId) return showToast('Você não está em uma sala de casal', 'error')
 
     setUploading(true)
     setProgress(0)
@@ -81,15 +84,16 @@ export default function NewPostForm() {
           setIsBlurred(false)
           setIsLocked(false)
           setNotifyPartner(false)
+          showToast('Memória publicada! ✨')
         } else {
           console.error('Cloudinary error', xhr.responseText)
-          alert('Erro no servidor de imagens')
+          showToast('Erro no servidor de imagens', 'error')
           setUploading(false)
         }
       }
 
       xhr.onerror = () => {
-        alert('Falha na conexão ao subir imagem')
+        showToast('Falha na conexão ao subir imagem', 'error')
         setUploading(false)
       }
 
@@ -97,7 +101,7 @@ export default function NewPostForm() {
 
     } catch (err) {
       console.error('Upload error', err)
-      alert('Erro ao processar imagem')
+      showToast('Erro ao processar imagem', 'error')
       setUploading(false)
     }
   }

@@ -98,10 +98,14 @@ function AppInner({ Component, pageProps }) {
   )
 }
 
+import { ToastProvider } from '../src/context/ToastContext'
+
 export default function App(props) {
   return (
     <AuthProvider>
-      <AppInner {...props} />
+      <ToastProvider>
+        <AppInner {...props} />
+      </ToastProvider>
     </AuthProvider>
   )
 }

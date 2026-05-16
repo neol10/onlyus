@@ -12,6 +12,7 @@ import { useAuth } from '../src/context/AuthContext'
 import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../src/firebase/firebaseClient'
 import MusicCard from '../components/MusicCard'
+import { useToast } from '../src/context/ToastContext'
 
 export default function Home() {
   const { user, profile, loading } = useAuth()
@@ -76,6 +77,8 @@ export default function Home() {
     return () => { unsubPosts(); unsubCouple(); unsubNotif() }
   }, [user, profile?.coupleId, loading])
 
+  const { showToast } = useToast()
+
   const sendLoveNotification = async () => {
     if (!profile?.coupleId || !user) return
     const notifRef = doc(db, 'couples', profile.coupleId, 'notifications', 'latest')
@@ -85,7 +88,7 @@ export default function Home() {
       timestamp: Date.now(),
       type: 'love'
     })
-    alert('Carinho enviado! ❤️')
+    showToast('Carinho enviado! ❤️')
   }
 
   const saveCoupleData = async (newData) => {

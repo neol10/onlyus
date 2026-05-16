@@ -3,25 +3,26 @@ import { collection, query, where, getDocs, doc, setDoc, updateDoc } from 'fireb
 import { db } from '../src/firebase/firebaseClient'
 import { useAuth } from '../src/context/AuthContext'
 
+import { useToast } from '../src/context/ToastContext'
+
 export default function CollabRoom() {
   const { user, profile, loading: authLoading } = useAuth()
+  const { showToast } = useToast()
   const [partnerCode, setPartnerCode] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleLinkPartner = async () => {
     if (!profile) return
     if (!partnerCode.trim()) {
-      setError('Por favor, insira o código do parceiro.')
+      showToast('Por favor, insira o código do parceiro.', 'error')
       return
     }
     if (partnerCode.trim().toUpperCase() === profile.code) {
-      setError('Você não pode vincular consigo mesmo.')
+      showToast('Você não pode vincular consigo mesmo.', 'error')
       return
     }
 
     setLoading(true)
-    setError('')
 
     try {
       // Procura o usuário parceiro pelo código
@@ -29,7 +30,7 @@ export default function CollabRoom() {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        setError('Código inválido ou parceiro não encontrado.')
+        showToast('Código inválido ou não encontrado.', 'error')
         setLoading(false)
         return
       }
@@ -39,7 +40,7 @@ export default function CollabRoom() {
       const partnerData = partnerDoc.data()
 
       if (partnerData.coupleId) {
-        setError('Este parceiro já está vinculado a outra pessoa.')
+        showToast('Este parceiro já está vinculado.', 'error')
         setLoading(false)
         return
       }
@@ -58,14 +59,15 @@ export default function CollabRoom() {
       await setDoc(doc(db, 'couples', newCoupleId), newCoupleData)
 
       // Atualizar o profile de ambos para incluir o coupleId
-      await updateDoc(doc(db, 'users', user.uid), { coupleId: newCoupleId })
       await updateDoc(doc(db, 'users', partnerId), { coupleId: newCoupleId })
+
+      showToast('Corações vinculados com sucesso! 🥰')
 
       // Como o AuthContext usa onSnapshot em 'users/uid', 
       // a tela vai recarregar magicamente sozinha quando coupleId existir!
     } catch (err) {
       console.error(err)
-      setError('Ocorreu um erro ao conectar os perfis.')
+      showToast('Erro ao conectar os perfis.', 'error')
     } finally {
       setLoading(false)
     }
@@ -109,7 +111,6 @@ export default function CollabRoom() {
               onChange={e => setPartnerCode(e.target.value)}
               className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-lg font-bold text-center uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[var(--ou-accent)] transition-all"
             />
-            {error && <p className="mt-2 text-sm text-rose-500 text-center font-medium">{error}</p>}
             
             <button
               onClick={handleLinkPartner}
