@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MusicCard({ coupleId }) {
   const [musicUrl, setMusicUrl] = useState('')
+  const [musicNote, setMusicNote] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [trackId, setTrackId] = useState('')
 
@@ -14,9 +15,10 @@ export default function MusicCard({ coupleId }) {
     const coupleRef = doc(db, 'couples', coupleId)
     const unsub = onSnapshot(coupleRef, (docSnap) => {
       if (docSnap.exists()) {
-        const url = docSnap.data().musicOfDay || ''
-        setMusicUrl(url)
-        extractTrackId(url)
+        const data = docSnap.data()
+        setMusicUrl(data.musicOfDay || '')
+        setMusicNote(data.musicNote || '')
+        extractTrackId(data.musicOfDay || '')
       }
     })
 
@@ -40,13 +42,14 @@ export default function MusicCard({ coupleId }) {
     if (!coupleId) return
     const coupleRef = doc(db, 'couples', coupleId)
     await updateDoc(coupleRef, {
-      musicOfDay: musicUrl
+      musicOfDay: musicUrl,
+      musicNote: musicNote
     })
     setIsEditing(false)
   }
 
   return (
-    <div className="soft-card p-4 relative overflow-hidden">
+    <div className="soft-card p-4 relative overflow-hidden bg-gradient-to-br from-white/80 to-white/40 dark:from-slate-900/80 dark:to-slate-900/40 backdrop-blur-md">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-[#1DB954] rounded-full flex items-center justify-center shadow-md">
@@ -55,7 +58,7 @@ export default function MusicCard({ coupleId }) {
             </svg>
           </div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            Música do Dia
+            Nota Musical
           </span>
         </div>
         
@@ -63,7 +66,7 @@ export default function MusicCard({ coupleId }) {
           onClick={() => setIsEditing(!isEditing)}
           className="text-[9px] font-black uppercase text-indigo-500/80 hover:text-indigo-600 transition-colors"
         >
-          {isEditing ? 'Fechar' : 'Trocar'}
+          {isEditing ? 'Fechar' : 'Editar Nota'}
         </button>
       </div>
 
@@ -71,23 +74,31 @@ export default function MusicCard({ coupleId }) {
         {isEditing ? (
           <motion.div 
             key="edit"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
             className="space-y-2"
           >
             <input 
               type="text"
-              placeholder="Cole o link do Spotify..."
+              placeholder="Sua mensagem (ex: Nossa parte em 01:20)"
+              value={musicNote}
+              onChange={(e) => setMusicNote(e.target.value)}
+              maxLength={40}
+              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+            />
+            <input 
+              type="text"
+              placeholder="Link da música no Spotify..."
               value={musicUrl}
               onChange={(e) => setMusicUrl(e.target.value)}
-              className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#1DB954]/50 transition-all"
+              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#1DB954]/50"
             />
             <button 
               onClick={handleSave}
-              className="w-full bg-[#1DB954] text-white py-2.5 rounded-xl text-xs font-bold shadow-md hover:bg-[#1ed760] transition-all"
+              className="w-full bg-gradient-to-r from-[#1DB954] to-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-md active:scale-95 transition-all"
             >
-              Atualizar Nota Musical 🎵
+              Salvar Nota ❤️
             </button>
           </motion.div>
         ) : (
@@ -95,27 +106,36 @@ export default function MusicCard({ coupleId }) {
             key="display"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-xl overflow-hidden"
+            className="space-y-3"
           >
+            {musicNote && (
+              <div className="relative inline-block mb-1">
+                <div className="bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl text-[11px] font-medium text-slate-700 dark:text-slate-200 shadow-sm border border-slate-100 dark:border-white/5 relative z-10">
+                  {musicNote}
+                </div>
+                {/* Rabinho do balão de fala */}
+                <div className="absolute -bottom-1 left-4 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-slate-100 dark:border-white/5 rotate-45 z-0" />
+              </div>
+            )}
+
             {trackId ? (
-              <iframe 
-                src={`https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`} 
-                width="100%" 
-                height="80" 
-                frameBorder="0" 
-                allowFullScreen="" 
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                loading="lazy"
-                style={{ borderRadius: '12px' }}
-              />
+              <div className="rounded-xl overflow-hidden shadow-inner border border-white/10">
+                <iframe 
+                  src={`https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`} 
+                  width="100%" 
+                  height="80" 
+                  frameBorder="0" 
+                  allowFullScreen="" 
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                  loading="lazy"
+                />
+              </div>
             ) : (
-              <div className="h-20 flex items-center justify-center bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-white/10">
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className="text-[11px] text-slate-400 font-medium hover:text-indigo-500 transition-colors"
-                >
-                  + Adicionar música do dia
-                </button>
+              <div 
+                onClick={() => setIsEditing(true)}
+                className="h-20 flex items-center justify-center bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-white/10 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10 transition-all"
+              >
+                <span className="text-[11px] text-slate-400 font-medium">+ Adicionar nota musical</span>
               </div>
             )}
           </motion.div>
