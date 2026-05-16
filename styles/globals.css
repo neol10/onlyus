@@ -102,7 +102,7 @@
   }
 
   .page-shell {
-    @apply mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 sm:pb-12 sm:pt-8;
+    @apply mx-auto w-full max-w-7xl px-4 pb-32 pt-20 sm:px-6 lg:px-8 sm:pb-12 sm:pt-24;
     position: relative;
   }
 
@@ -204,10 +204,10 @@
   }
 
   .topbar-shell {
-    @apply sticky top-0 z-40 border-b backdrop-blur-xl;
+    @apply sticky top-0 z-40 border-b backdrop-blur-2xl;
     border-color: color-mix(in srgb, var(--ou-accent-soft, rgba(99,102,241,0.18)) 55%, rgba(255, 255, 255, 0.6));
-    background: linear-gradient(145deg, color-mix(in srgb, var(--ou-topbar-bg, rgba(255,255,255,0.82)) 92%, white), rgba(255,255,255,0.68));
-    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+    background: color-mix(in srgb, var(--ou-topbar-bg, rgba(255,255,255,0.92)) 98%, white);
+    box-shadow: 0 4px 30px rgba(15, 23, 42, 0.12);
   }
 
   .bottombar-shell {
