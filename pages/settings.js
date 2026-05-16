@@ -175,7 +175,6 @@ export default function SettingsPage() {
   // Função para Alternar Biometria (WebAuthn)
   const handleToggleBiometrics = async () => {
     if (settings.biometricsEnabled) {
-      // Se já estiver ativado, apenas desativa
       updateSetting('biometricsEnabled', false)
       updateSetting('biometricCredentialId', '')
       handleSave({ ...settings, biometricsEnabled: false, biometricCredentialId: '' })
@@ -210,7 +209,11 @@ export default function SettingsPage() {
       })
 
       if (credential) {
+        // Codificação robusta para evitar corrupção de caracteres
         const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '')
         
         updateSetting('biometricsEnabled', true)
         updateSetting('biometricCredentialId', credentialId)
@@ -224,7 +227,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error('Erro biometria:', err)
-      alert('Não foi possível configurar a biometria. Verifique se seu dispositivo tem FaceID/Digital ativo.')
+      alert('Verifique se seu dispositivo tem FaceID/Digital ativo e tente novamente.')
     }
   }
 

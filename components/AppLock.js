@@ -7,6 +7,7 @@ export default function AppLock({ children }) {
   const [isLocked, setIsLocked] = useState(false)
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
+  const [authStatus, setAuthStatus] = useState('')
 
   const settings = useMemo(() => profile?.settings || {}, [profile])
   const pinEnabled = settings.pinEnabled
@@ -20,8 +21,8 @@ export default function AppLock({ children }) {
       if (!isUnlocked) {
         setIsLocked(true)
         if (biometricsEnabled) {
-          // Pequeno delay para garantir que a UI carregou
-          setTimeout(handleBiometricAuth, 800)
+          // Pequeno delay para garantir que a UI carregou e evitar conflitos de render
+          setTimeout(handleBiometricAuth, 1200)
         }
       }
     }
@@ -29,34 +30,50 @@ export default function AppLock({ children }) {
 
   const handleBiometricAuth = async () => {
     try {
-      if (!window.PublicKeyCredential) return
+      if (!window.PublicKeyCredential) {
+        setAuthStatus('Biometria não suportada')
+        return
+      }
       
+      setAuthStatus('Solicitando biometria...')
       const challenge = new Uint8Array(32)
       window.crypto.getRandomValues(challenge)
 
-      // Configuração para FaceID/Digital
+      // Prepara os IDs permitidos de forma segura
+      let allowCredentials = []
+      if (biometricCredentialId) {
+        try {
+          const rawId = Uint8Array.from(atob(biometricCredentialId.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
+          allowCredentials = [{ id: rawId, type: 'public-key' }]
+        } catch (e) {
+          console.error('Erro ao decodificar ID da biometria')
+        }
+      }
+
       const options = {
         publicKey: {
           challenge,
           timeout: 60000,
           userVerification: "required",
-          allowCredentials: biometricCredentialId ? [{
-            id: Uint8Array.from(atob(biometricCredentialId), c => c.charCodeAt(0)),
-            type: 'public-key'
-          }] : []
+          allowCredentials,
+          // Isso ajuda o navegador a encontrar a chave no dispositivo
+          authenticatorSelection: { authenticatorAttachment: "platform" }
         }
       }
 
       const assertion = await navigator.credentials.get(options)
       if (assertion) {
+        setAuthStatus('Desbloqueado!')
         unlock()
       }
     } catch (err) {
-      console.log('Erro ou cancelamento de biometria:', err)
-      // Se falhou com ID específico, tenta o modo genérico
+      console.log('Erro biometria:', err)
+      setAuthStatus('Toque no ícone para tentar biometria')
+      
+      // Tenta modo genérico se o modo com ID falhar
       if (biometricCredentialId) {
         try {
-          const genericOptions = { publicKey: { challenge: new Uint8Array(32), timeout: 60000, userVerification: "required" } }
+          const genericOptions = { publicKey: { challenge: new Uint8Array(32), timeout: 30000, userVerification: "required" } }
           const genericAssertion = await navigator.credentials.get(genericOptions)
           if (genericAssertion) unlock()
         } catch (e) {}
@@ -68,6 +85,7 @@ export default function AppLock({ children }) {
     setIsLocked(false)
     sessionStorage.setItem('app_unlocked', 'true')
     setPin('')
+    setAuthStatus('')
   }
 
   const handleKeyPress = (num) => {
@@ -119,7 +137,7 @@ export default function AppLock({ children }) {
               </motion.div>
 
               <h2 className="text-xl font-bold text-white mb-1">Cofre OnlyUs</h2>
-              <p className="text-slate-400 text-xs mb-8">PIN ou Biometria</p>
+              <p className="text-slate-400 text-xs mb-8">{authStatus || 'Digite o PIN'}</p>
 
               <div className="flex justify-center gap-4 mb-10">
                 {[0, 1, 2, 3].map((i) => (
