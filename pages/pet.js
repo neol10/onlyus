@@ -151,41 +151,83 @@ export default function PetPage() {
           </div>
         </div>
 
-        {/* O PET VIVO */}
+        {/* O PET VIVO COM 10 ANIMAÇÕES */}
         <div className="relative flex flex-col items-center py-10">
           <AnimatePresence>
             {showHearts && (
               <motion.div className="absolute top-0 flex gap-4 z-20">
-                {[1,2,3].map(i => (
-                  <motion.span key={i} initial={{y:0, opacity:1}} animate={{y:-150, opacity:0}} transition={{duration:1.5, delay: i*0.1}} className="text-5xl">❤️</motion.span>
+                {[1,2,3,4,5].map(i => (
+                  <motion.span 
+                    key={i} 
+                    initial={{ y: 0, x: 0, opacity: 1, scale: 0.5 }} 
+                    animate={{ 
+                      y: -200, 
+                      x: (i - 3) * 30, 
+                      opacity: 0, 
+                      scale: 1.5,
+                      rotate: i % 2 === 0 ? 45 : -45 
+                    }} 
+                    transition={{ duration: 2, delay: i * 0.1 }} 
+                    className="text-4xl"
+                  >
+                    ❤️
+                  </motion.span>
                 ))}
               </motion.div>
             )}
           </AnimatePresence>
 
           <motion.div
+            key={petData.type + petData.level}
             animate={{ 
-              scale: [1, 1.02, 1],
-              y: petData.hunger < 30 ? [0, 2, 0] : [0, -10, 0],
-              rotate: petData.hunger < 30 ? [-1, 1, -1] : 0
+              // 1. Respiração + 2. Levitação
+              scale: [1, 1.05, 1],
+              y: petData.hunger < 30 
+                ? [0, 3, 0, 3, 0] // 3. Tremor de Fome
+                : [0, -15, 0],    // 4. Flutuação Mágica
+              
+              // 5. Inclinação de Curiosidade
+              rotate: petData.love > 80 
+                ? [0, -5, 5, 0] 
+                : petData.hunger < 20 ? [-2, 2, -2, 2, 0] : 0,
+              
+              // 6. Efeito de "Pulo" em ações
+              filter: showHearts ? 'brightness(1.2)' : 'brightness(1)'
             }}
-            transition={{ repeat: Infinity, duration: petData.hunger < 30 ? 0.2 : 2.5 }}
-            className="relative z-10"
+            whileTap={{ scale: 0.8, rotate: 15 }} // 7. Reação ao toque
+            transition={{ 
+              repeat: Infinity, 
+              duration: petData.hunger < 30 ? 0.3 : 3,
+              ease: "easeInOut"
+            }}
+            className="relative z-10 cursor-pointer select-none"
           >
-            <span className="text-[140px] sm:text-[180px] block drop-shadow-2xl select-none filter">
+            <span className="text-[150px] sm:text-[190px] block drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
               {PET_TYPES[petData.type || 'cat']?.emoji || '🐱'}
             </span>
-            {petData.hunger < 30 && (
-              <motion.span 
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-                className="absolute -top-4 -right-4 text-3xl"
+
+            {/* 8. Balão de Pensamento Dinâmico */}
+            {petData.hunger < 40 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute -top-8 -right-8 bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-xl border border-slate-100 dark:border-white/10"
               >
-                💭🍲
-              </motion.span>
+                <span className="text-2xl">🍲</span>
+              </motion.div>
             )}
           </motion.div>
-          <div className="w-40 h-6 bg-black/5 dark:bg-white/5 blur-xl rounded-full mt-[-20px]"></div>
+
+          {/* 9. Sombra Dinâmica + 10. Pulsar de Felicidade */}
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.2, 0.1],
+              width: [120, 150, 120]
+            }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            className="h-6 bg-black/20 dark:bg-white/10 blur-xl rounded-full mt-[-25px]"
+          ></motion.div>
         </div>
 
         {/* Nome e Troca */}
