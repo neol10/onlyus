@@ -455,6 +455,39 @@ export default function SettingsPage() {
                     onChange={(e) => setLocalPartnerNick(e.target.value)}
                   />
                 </div>
+                <div className="sm:col-span-2 pt-2">
+                  <label className="field-label text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 block">Foto do Radar (Pin no Mapa)</label>
+                  <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 dark:bg-white/10 flex-shrink-0 border-2 border-indigo-500/20 shadow-inner">
+                       <img src={settings?.pinPhoto || 'https://ui-avatars.com/api/?name=Radar'} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-tight">Esta foto aparecerá para o seu parceiro no Life360.</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="text-xs file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            try {
+                              showToast('Subindo foto do radar...')
+                              const formData = new FormData()
+                              formData.append('file', file)
+                              formData.append('upload_preset', 'etx8raxe')
+                              const res = await fetch('https://api.cloudinary.com/v1_1/dftwoo90i/image/upload', { method: 'POST', body: formData })
+                              const data = await res.json()
+                              if (data.secure_url) {
+                                updateSetting('pinPhoto', data.secure_url)
+                                showToast('Foto do radar atualizada! 📍')
+                              }
+                            } catch (err) { showToast('Erro no upload.', 'error') }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

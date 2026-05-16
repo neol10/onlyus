@@ -1,6 +1,9 @@
   // Efeito Visual de Chama Animada
   const FlameEffect = ({ streak, isLosing }) => {
     if (streak === 0 && !isLosing) return null
+    const now = new Date()
+    const isLateNight = now.getHours() >= 22 // Quase meia-noite
+    
     return (
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <AnimatePresence>
@@ -21,7 +24,9 @@
                   repeat: Infinity, 
                   delay: i * 0.1 
                 }}
-                className={`absolute w-4 h-4 rounded-full blur-md ${streak > 10 ? 'bg-cyan-400' : 'bg-orange-500'}`}
+                className={`absolute w-4 h-4 rounded-full blur-md ${
+                  isLateNight ? 'bg-slate-500' : (streak > 10 ? 'bg-cyan-400' : 'bg-orange-500')
+                }`}
               />
             ))
           ) : (
