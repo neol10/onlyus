@@ -359,10 +359,6 @@ export default function PetPage() {
                )}
              </p>
           </div>
-        </div>imate-pulse">⏳</span> Pendente</>
-               )}
-             </p>
-          </div>
         </div>
 
         {/* Alerta de Missão */}
