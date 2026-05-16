@@ -146,7 +146,7 @@ export default function TimelinePage() {
                     </div>
                   )}
                   {events.map((event) => (
-                    <EventCard key={event.id} event={event} />
+                    <EventCard key={event.id} event={event} coupleId={profile?.coupleId} />
                   ))}
                 </motion.div>
               )}
