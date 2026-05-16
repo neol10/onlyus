@@ -11,6 +11,7 @@ import { useRouter } from 'next/router'
 import { useAuth } from '../src/context/AuthContext'
 import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../src/firebase/firebaseClient'
+import MusicCard from '../components/MusicCard'
 
 export default function Home() {
   const { user, profile, loading } = useAuth()
@@ -137,38 +138,41 @@ export default function Home() {
           <LovePing />
           <main className="page-shell">
             <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
-            <div className="soft-card p-6 sm:p-8 flex flex-col justify-between h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
-              <svg className="w-40 h-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </div>
-            
-            <div>
-              <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] rounded-full">
-                Nosso Tempo
-              </span>
+            <div className="flex flex-col gap-4">
+              <div className="soft-card p-6 sm:p-8 flex flex-col justify-between h-full relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
+                <svg className="w-40 h-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              </div>
               
-              <div className="mt-6 mb-4">
-                {coupleData.relationshipDate && !isEditingDate ? (
-                  <div onClick={() => setIsEditingDate(true)} className="cursor-pointer group">
-                    <LoveTimer startDate={coupleData.relationshipDate} />
-                    <p className="text-xs text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Toque para editar a data</p>
-                  </div>
-                ) : (
-                  <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl backdrop-blur-sm border border-[var(--ou-accent-soft)]">
-                    <p className="text-sm font-medium mb-2">Quando a história começou?</p>
-                    <div className="flex gap-2">
-                      <input 
-                        type="date" 
-                        value={coupleData.relationshipDate}
-                        onChange={(e) => saveCoupleData({ relationshipDate: e.target.value })}
-                        className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--ou-accent)]"
-                      />
-                      <button onClick={() => setIsEditingDate(false)} className="px-4 bg-[var(--ou-accent)] text-white rounded-lg text-sm font-semibold">Salvar</button>
+              <div>
+                <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] rounded-full">
+                  Nosso Tempo
+                </span>
+                
+                <div className="mt-6 mb-4">
+                  {coupleData.relationshipDate && !isEditingDate ? (
+                    <div onClick={() => setIsEditingDate(true)} className="cursor-pointer group">
+                      <LoveTimer startDate={coupleData.relationshipDate} />
+                      <p className="text-xs text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Toque para editar a data</p>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl backdrop-blur-sm border border-[var(--ou-accent-soft)]">
+                      <p className="text-sm font-medium mb-2">Quando a história começou?</p>
+                      <div className="flex gap-2">
+                        <input 
+                          type="date" 
+                          value={coupleData.relationshipDate}
+                          onChange={(e) => saveCoupleData({ relationshipDate: e.target.value })}
+                          className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--ou-accent)]"
+                        />
+                        <button onClick={() => setIsEditingDate(false)} className="px-4 bg-[var(--ou-accent)] text-white rounded-lg text-sm font-semibold">Salvar</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+            <MusicCard coupleId={profile?.coupleId} />
           </div>
 
           <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
