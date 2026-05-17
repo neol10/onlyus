@@ -222,22 +222,48 @@ export default function Home() {
                                   {/* Campo livre — abre teclado de emoji no celular */}
                                   <div className="border-t border-slate-100 dark:border-white/10 pt-2">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Qualquer emoji</p>
-                                    <input
-                                      type="text"
-                                      inputMode="none"
-                                      placeholder="Toque e escolha 😊"
-                                      className="w-full text-center text-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-400"
-                                      onFocus={e => e.target.value = ''}
-                                      onChange={e => {
-                                        // Pega apenas o primeiro caractere (emoji)
-                                        const val = [...e.target.value.trim()]
-                                        if (val.length > 0) {
-                                          const emoji = val[0]
-                                          saveCoupleData({ myMood: emoji })
-                                          setShowMoodSelector(false)
-                                        }
-                                      }}
-                                    />
+                                    <div className="flex gap-2 items-center">
+                                      <input
+                                        type="text"
+                                        placeholder="😊"
+                                        maxLength={8}
+                                        className="flex-1 text-center text-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter') {
+                                            const val = [...e.target.value.trim()]
+                                            if (val.length > 0) {
+                                              saveCoupleData({ myMood: val[0] })
+                                              setShowMoodSelector(false)
+                                            }
+                                          }
+                                        }}
+                                        onChange={e => {
+                                          // Auto-salva assim que detectar um emoji (>1 char por codepoint)
+                                          const raw = e.target.value
+                                          const chars = [...raw]
+                                          // Emojis são geralmente ≥2 codepoints ou >1 char
+                                          if (chars.length >= 1 && raw !== chars[0]) {
+                                            saveCoupleData({ myMood: chars[0] })
+                                            setShowMoodSelector(false)
+                                          }
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={e => {
+                                          const input = e.currentTarget.previousSibling
+                                          const val = [...input.value.trim()]
+                                          if (val.length > 0) {
+                                            saveCoupleData({ myMood: val[0] })
+                                            setShowMoodSelector(false)
+                                          }
+                                        }}
+                                        className="px-3 py-2 bg-indigo-500 text-white text-xs font-bold rounded-xl hover:bg-indigo-600 transition active:scale-95"
+                                      >
+                                        Usar
+                                      </button>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 mt-1 text-center">Digite e pressione Usar ou Enter</p>
                                   </div>
                                 </div>
                               )}
