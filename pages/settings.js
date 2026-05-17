@@ -251,6 +251,42 @@ export default function SettingsPage() {
     applyThemeToDocument(newSettings)
   }
 
+  const handleTogglePushNotifications = async (checked) => {
+    updateSetting('pushNotifications', checked)
+    
+    if (checked) {
+      if (typeof window === 'undefined') return
+      try {
+        const permission = await Notification.requestPermission()
+        if (permission === 'granted') {
+          showToast('Permissão de notificação concedida! 🔔')
+          // Importações dinâmicas para evitar erros SSR do Next.js
+          const { messaging } = await import('../src/firebase/firebaseClient')
+          const { getToken } = await import('firebase/messaging')
+          if (messaging && user) {
+            const token = await getToken(messaging, {
+              vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+            })
+            if (token) {
+              const userRef = doc(db, 'users', user.uid)
+              await updateDoc(userRef, { fcmToken: token })
+            }
+          }
+        } else {
+          showToast('Permissão de notificação negada ou bloqueada.', 'warning')
+        }
+      } catch (err) {
+        console.warn('Erro ao habilitar FCM:', err)
+      }
+    } else {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid)
+        await updateDoc(userRef, { fcmToken: '' })
+        showToast('Notificações push desativadas.')
+      }
+    }
+  }
+
   if (loading || !settings) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
@@ -597,6 +633,59 @@ export default function SettingsPage() {
                     </label>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div className="soft-card p-4 sm:p-7">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Preferências e Notificações</p>
+              <div className="mt-5 space-y-4">
+                {/* Toggle das Notificações Push */}
+                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={settings.pushNotifications || false}
+                    onChange={(e) => handleTogglePushNotifications(e.target.checked)}
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-white">Notificações Push 🔔</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Receber pensamentos instantâneos (Pings 2.0), avisos e interações em tempo real no dispositivo.
+                    </span>
+                  </span>
+                </label>
+
+                {/* Toggle do Feed Privativo */}
+                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={settings.privateFeed !== undefined ? settings.privateFeed : true}
+                    onChange={(e) => updateSetting('privateFeed', e.target.checked)}
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-white">Feed Privativo (Segurança) 🔒</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Oculta os posts e fotos na tela inicial por padrão, exigindo biometria/PIN para desbloquear a visualização.
+                    </span>
+                  </span>
+                </label>
+
+                {/* Toggle das Lembranças Diárias */}
+                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 bg-white/50 dark:bg-white/5">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={settings.autoMemories !== undefined ? settings.autoMemories : true}
+                    onChange={(e) => updateSetting('autoMemories', e.target.checked)}
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-white">Lembranças Diárias 📅</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Exibe um card especial na Home com um momento/foto antiga de vocês recordarem no dia de hoje.
+                    </span>
+                  </span>
+                </label>
               </div>
             </div>
 
