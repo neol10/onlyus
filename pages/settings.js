@@ -158,11 +158,20 @@ export default function SettingsPage() {
         const userRef = doc(db, 'users', user.uid)
         await setDoc(userRef, { settings: finalSettings }, { merge: true })
         
-        // Se estiver em um casal, salva na sala apenas os temas e configurações compartilhadas
+        // Se estiver em um casal, salva na sala apenas os temas e configurações VISUAIS compartilhadas.
+        // Configurações de segurança (PIN, biometria) são INDIVIDUAIS e não devem ser compartilhadas.
         if (profile?.coupleId) {
           const coupleRef = doc(db, 'couples', profile.coupleId)
-          // Não salvamos displayName/partnerNick no coupleRef pois são individuais
-          const { displayName, partnerNick, ...sharedSettings } = finalSettings
+          const {
+            displayName,
+            partnerNick,
+            pinEnabled,
+            pinCode,
+            biometricsEnabled,
+            biometricCredentialId,
+            vaultPhoto,
+            ...sharedSettings
+          } = finalSettings
           await setDoc(coupleRef, { settings: sharedSettings }, { merge: true })
         }
         

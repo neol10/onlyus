@@ -62,16 +62,27 @@ export function AuthProvider({ children }) {
             setProfile(data)
             
             // Escuta as configurações da sala do casal (Global)
+            // IMPORTANTE: configurações de segurança (PIN, biometria) são INDIVIDUAIS
+            // e nunca devem ser sincronizadas do casal para o usuário.
             if (data.coupleId) {
               const coupleRef = doc(db, 'couples', data.coupleId)
               onSnapshot(coupleRef, (coupleSnap) => {
                 if (coupleSnap.exists()) {
                   const coupleData = coupleSnap.data()
                   if (coupleData.settings && typeof window !== 'undefined') {
+                    // Remove campos de segurança individuais antes de aplicar as configs do casal
+                    const {
+                      pinEnabled,
+                      pinCode,
+                      biometricsEnabled,
+                      biometricCredentialId,
+                      vaultPhoto,
+                      ...safeSharedSettings
+                    } = coupleData.settings
                     import('../theme').then(m => {
-                      m.applyThemeToDocument(coupleData.settings)
+                      m.applyThemeToDocument(safeSharedSettings)
                       const storageKey = m.getThemeSettingsKey(u.uid)
-                      m.saveThemeSettings(storageKey, coupleData.settings)
+                      m.saveThemeSettings(storageKey, safeSharedSettings)
                     })
                   }
                 }
