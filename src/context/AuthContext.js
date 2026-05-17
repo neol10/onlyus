@@ -81,6 +81,15 @@ export function AuthProvider({ children }) {
                       biometricsEnabled,
                       biometricCredentialId,
                       vaultPhoto,
+                      displayName,
+                      partnerNick,
+                      pushNotifications,
+                      privateFeed,
+                      autoMemories,
+                      blurPhotos,
+                      pinOnPosts,
+                      backgroundIntensity,
+                      motionIntensity,
                       ...safeSharedSettings
                     } = coupleData.settings
                     import('../theme').then(m => {

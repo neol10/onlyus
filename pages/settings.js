@@ -170,6 +170,13 @@ export default function SettingsPage() {
             biometricsEnabled,
             biometricCredentialId,
             vaultPhoto,
+            pushNotifications,
+            privateFeed,
+            autoMemories,
+            blurPhotos,
+            pinOnPosts,
+            backgroundIntensity,
+            motionIntensity,
             ...sharedSettings
           } = finalSettings
           await setDoc(coupleRef, { settings: sharedSettings }, { merge: true })
