@@ -138,35 +138,37 @@ export default function Home() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <section className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
-                    <div className="flex flex-col gap-4">
-                      <div className="soft-card p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
+                  {/* Grid Principal Superior — Ultra Responsivo */}
+                  <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-[1.3fr_0.7fr] items-start">
+                    {/* Coluna Esquerda: LoveTimer e Música */}
+                    <div className="flex flex-col gap-4 w-full">
+                      <div className="soft-card p-5 sm:p-8 flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-3 opacity-5 pointer-events-none">
                           <svg className="w-40 h-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                         </div>
                         
                         <div>
-                          <span className="theme-pill inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] rounded-full">
+                          <span className="theme-pill inline-flex items-center px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] rounded-full">
                             Nosso Tempo
                           </span>
                           
-                          <div className="mt-6 mb-4">
+                          <div className="mt-5">
                             {coupleData.relationshipDate && !isEditingDate ? (
                               <div onClick={() => setIsEditingDate(true)} className="cursor-pointer group">
                                 <LoveTimer startDate={coupleData.relationshipDate} />
-                                <p className="text-xs text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Toque para editar a data</p>
+                                <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">Toque para editar a data</p>
                               </div>
                             ) : (
-                              <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl backdrop-blur-sm border border-[var(--ou-accent-soft)]">
-                                <p className="text-sm font-medium mb-2">Quando a história começou?</p>
+                              <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-[var(--ou-accent-soft)]">
+                                <p className="text-xs font-semibold mb-2">Quando a história começou?</p>
                                 <div className="flex gap-2">
                                   <input 
                                     type="date" 
                                     value={coupleData.relationshipDate}
                                     onChange={(e) => saveCoupleData({ relationshipDate: e.target.value })}
-                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--ou-accent)]"
+                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[var(--ou-accent)]"
                                   />
-                                  <button onClick={() => setIsEditingDate(false)} className="px-4 bg-[var(--ou-accent)] text-white rounded-lg text-sm font-semibold">Salvar</button>
+                                  <button onClick={() => setIsEditingDate(false)} className="px-4 bg-[var(--ou-accent)] text-white rounded-xl text-xs font-bold">Salvar</button>
                                 </div>
                               </div>
                             )}
@@ -176,66 +178,86 @@ export default function Home() {
                       <MusicCard coupleId={profile?.coupleId} />
                     </div>
 
-                    <div className="soft-card grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-1">
-                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden">
-                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Live Presence</p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                          </span>
-                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Sincronizados</span>
+                    {/* Coluna Direita: Status rápidos sem caixa redundante por fora para responsividade premium */}
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 w-full">
+                      {/* Live Presence */}
+                      <div className="soft-card px-5 py-4 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] relative overflow-hidden flex items-center justify-between lg:flex-col lg:items-start lg:justify-center gap-2 min-h-[84px]">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-400 leading-none">Live Presence</p>
+                          <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1.5 block">Sincronizados</span>
                         </div>
+                        <span className="relative flex h-3.5 w-3.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                        </span>
                       </div>
                       
-                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">Seu Humor</p>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setShowMoodSelector(!showMoodSelector)}
-                                className="flex items-center gap-2 hover:opacity-80 active:scale-95 transition-all"
-                              >
-                                <span className="text-3xl drop-shadow-md">{coupleData.myMood}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase underline underline-offset-2 decoration-dotted">Alterar</span>
-                              </button>
-                            </div>
-                          </div>
-                          <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
-                          <div className="text-right">
-                            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">{coupleData.partnerNick}</p>
-                            <span className="text-3xl drop-shadow-md">{coupleData.partnerMood}</span>
-                          </div>
+                      {/* Seu Humor */}
+                      <div className="soft-card px-5 py-4 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] flex items-center justify-between gap-4 min-h-[84px]">
+                        <div className="flex-1">
+                          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-400 leading-none mb-1.5">Seu Humor</p>
+                          <button
+                            onClick={() => setShowMoodSelector(!showMoodSelector)}
+                            className="flex items-center gap-1.5 hover:opacity-85 active:scale-95 transition-all text-left"
+                          >
+                            <span className="text-3xl drop-shadow-sm select-none">{coupleData.myMood}</span>
+                            <span className="text-[9px] text-slate-400 font-bold uppercase underline underline-offset-2 decoration-dotted">Mudar</span>
+                          </button>
+                        </div>
+                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+                        <div className="text-right">
+                          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-400 leading-none mb-1.5">{coupleData.partnerNick}</p>
+                          <span className="text-3xl drop-shadow-sm select-none">{coupleData.partnerMood}</span>
                         </div>
                       </div>
-                      <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300">Total de Memórias</p>
-                        <p className="mt-1 text-lg font-semibold text-[var(--ou-accent)]">{posts.length} momentos gravados</p>
+
+                      {/* Total de Memórias */}
+                      <div className="soft-card px-5 py-4 bg-gradient-to-br from-[var(--ou-card-bg)] to-[var(--ou-card-bg-2)] flex items-center justify-between lg:flex-col lg:items-start lg:justify-center gap-1 min-h-[84px]">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-400 leading-none">Total de Memórias</p>
+                          <p className="mt-1 text-sm font-extrabold text-[var(--ou-accent)]">{posts.length} gravadas</p>
+                        </div>
+                        <Link href="/timeline" className="text-[9px] font-black uppercase text-indigo-500 hover:underline">Ver todas →</Link>
                       </div>
                     </div>
                   </section>
 
-                  <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
-                    <div className="space-y-6">
+                  {/* Grid Principal Inferior: Throwback e Últimas Memórias */}
+                  <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] xl:grid-cols-[0.7fr_1.3fr] items-start">
+                    {/* Lado Esquerdo: Lembrança Antiga (Throwback) */}
+                    <div className="w-full">
                       <ThrowbackCard posts={posts} />
-                      <div className="soft-card p-5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border-indigo-100 dark:border-indigo-500/10">
-                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-indigo-600 dark:text-indigo-400">Dica de Hoje</p>
-                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">Todas as fotos e memórias agora estão centralizadas na sua <b>Timeline</b>. Use o Radar para ver a localização em tempo real.</p>
-                        <Link href="/timeline">
-                          <button className="mt-4 text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 hover:underline">Ver Timeline →</button>
-                        </Link>
-                      </div>
                     </div>
 
-                    <div className="space-y-4">
-                       <div className="soft-card p-8 text-center bg-white/50 dark:bg-white/5 border-dashed">
+                    {/* Lado Direito: Lembranças Recentes Reais (substitui o card estático 'Resumo do Dia') */}
+                    <div className="space-y-4 w-full">
+                      <div className="flex items-center justify-between px-2">
+                        <h3 className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Últimos Momentos 📸</h3>
+                        {posts.length > 3 && (
+                          <Link href="/timeline" className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                            Ver mais ({posts.length}) →
+                          </Link>
+                        )}
+                      </div>
+
+                      {posts.length === 0 ? (
+                        <div className="soft-card p-8 text-center bg-white/50 dark:bg-white/5 border-dashed">
                           <div className="w-12 h-12 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                           </div>
-                          <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Resumo do Dia</p>
-                          <p className="text-xs text-slate-400 mt-2">Visite a Timeline para ver as últimas fotos e marcos registrados.</p>
-                       </div>
+                          <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Nenhuma memória ainda</p>
+                          <p className="text-xs text-slate-400 mt-2">Que tal postar o primeiro momento de vocês na Timeline?</p>
+                          <Link href="/timeline">
+                            <button className="primary-button mt-4 px-4 py-2 text-xs font-bold">Publicar Agora 📸</button>
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {posts.slice(0, 2).map((post) => (
+                            <PostCard key={post.id} post={post} settings={coupleData} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </section>
                 </motion.div>
