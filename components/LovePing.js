@@ -8,7 +8,8 @@ export default function LovePing() {
   const { user, profile } = useAuth()
   const [particles, setParticles] = useState([])
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [lastPingRecv, setLastPingRecv] = useState(null)
+  const [lastPingRecv, setLastPingRecv] = useState(Date.now())
+  const mountTime = useRef(Date.now())
   
   // States do Love Shake
   const [showShakeSuccess, setShowShakeSuccess] = useState(false)
@@ -27,7 +28,12 @@ export default function LovePing() {
       // 1. Escuta Pings Dinâmicos
       if (data.latestPing) {
         const ping = data.latestPing
-        if (ping.sender !== user.uid && (!lastPingRecv || ping.timestamp > lastPingRecv)) {
+        const isRecent = Date.now() - ping.timestamp < 15000
+        if (
+          ping.sender !== user.uid && 
+          isRecent &&
+          (ping.timestamp > lastPingRecv)
+        ) {
           triggerIncomingPing(ping.type)
           setLastPingRecv(ping.timestamp)
         }
@@ -40,12 +46,12 @@ export default function LovePing() {
         const myLastShake = shakes[user.uid] || 0
         const partnerLastShake = shakes[partnerId] || 0
 
-        // Se ambos sacudiram dentro de um intervalo de 8 segundos nos últimos 30 segundos
+        // Se ambos sacudiram dentro de um intervalo de 8 segundos nos últimos 25 segundos
         const diff = Math.abs(myLastShake - partnerLastShake)
         const now = Date.now()
         if (
-          myLastShake > 0 &&
-          partnerLastShake > 0 &&
+          myLastShake > mountTime.current &&
+          partnerLastShake > mountTime.current &&
           diff < 8000 &&
           (now - myLastShake < 25000) &&
           (now - partnerLastShake < 25000)

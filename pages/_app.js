@@ -59,8 +59,9 @@ function AppInner({ Component, pageProps }) {
             if (nSnap.exists()) {
               const notif = nSnap.data()
               // Só mostra se for recente (últimos 30 segundos) e não for do próprio autor
+              const notifUniqueId = `${notif.timestamp}-${notif.from}`
               const lastNotifId = localStorage.getItem(`last-notif-${cId}`)
-              if (notif.timestamp > Date.now() - 30000 && notif.from !== user.uid && nSnap.id !== lastNotifId) {
+              if (notif.timestamp > Date.now() - 30000 && notif.from !== user.uid && notifUniqueId !== lastNotifId) {
                 // 1. Toast In-App
                 showToast(notif.message, notif.type === 'streak' ? 'success' : 'info')
 
@@ -73,7 +74,7 @@ function AppInner({ Component, pageProps }) {
                     tag: 'onlyus-notif' 
                   })
                 }
-                localStorage.setItem(`last-notif-${cId}`, nSnap.id)
+                localStorage.setItem(`last-notif-${cId}`, notifUniqueId)
               }
             }
           })
