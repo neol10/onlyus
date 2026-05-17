@@ -24,7 +24,7 @@ export default function Home() {
   const [isEditingDate, setIsEditingDate] = useState(false)
   const [showMoodSelector, setShowMoodSelector] = useState(false)
 
-  const MOOD_OPTIONS = ['🥰', '❤️', '😊', '🤩', '😴', '😢', '😤', '🥺', '🤯', '🥵']
+  const MOOD_OPTIONS = ['🥰', '❤️', '😊', '🤩', '😴', '😢', '😤', '🥺', '🤯', '🥵', '😁', '🫶', '😍', '🤭', '🥳', '😌', '🫠', '🫰', '🤍', '✨']
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
@@ -202,19 +202,43 @@ export default function Home() {
                               <span className="text-[10px] text-slate-400 font-bold uppercase">Alterar</span>
 
                               {showMoodSelector && (
-                                <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 grid grid-cols-5 gap-2 w-48 animate-in fade-in zoom-in duration-200">
-                                  {MOOD_OPTIONS.map(emoji => (
-                                    <button 
-                                      key={emoji}
-                                      onClick={() => {
-                                        saveCoupleData({ myMood: emoji })
-                                        setShowMoodSelector(false)
+                                <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 w-56 animate-in fade-in zoom-in duration-200">
+                                  {/* Presets rápidos */}
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Rápidos</p>
+                                  <div className="grid grid-cols-5 gap-1 mb-3">
+                                    {MOOD_OPTIONS.map(emoji => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => {
+                                          saveCoupleData({ myMood: emoji })
+                                          setShowMoodSelector(false)
+                                        }}
+                                        className="text-2xl hover:bg-slate-100 dark:hover:bg-white/5 p-1 rounded-lg transition-colors"
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {/* Campo livre — abre teclado de emoji no celular */}
+                                  <div className="border-t border-slate-100 dark:border-white/10 pt-2">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Qualquer emoji</p>
+                                    <input
+                                      type="text"
+                                      inputMode="none"
+                                      placeholder="Toque e escolha 😊"
+                                      className="w-full text-center text-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                                      onFocus={e => e.target.value = ''}
+                                      onChange={e => {
+                                        // Pega apenas o primeiro caractere (emoji)
+                                        const val = [...e.target.value.trim()]
+                                        if (val.length > 0) {
+                                          const emoji = val[0]
+                                          saveCoupleData({ myMood: emoji })
+                                          setShowMoodSelector(false)
+                                        }
                                       }}
-                                      className="text-2xl hover:bg-slate-100 dark:hover:bg-white/5 p-1 rounded-lg transition-colors"
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
+                                    />
+                                  </div>
                                 </div>
                               )}
                             </div>
