@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../src/context/AuthContext'
 import { db } from '../src/firebase/firebaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -22,6 +22,9 @@ export default function PostCard({ post = {}, settings = {} }) {
   const [newComment, setNewComment] = useState('')
   const [isLiking, setIsLiking] = useState(false)
   const [localLikes, setLocalLikes] = useState(likes)
+  // Carrossel
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const touchStartX = useRef(null)
 
   useEffect(() => {
     setLocalLikes(likes)
@@ -140,23 +143,93 @@ export default function PostCard({ post = {}, settings = {} }) {
         <div className="px-5 pt-4 text-[15px] leading-7 text-slate-700 dark:text-slate-300">{caption}</div>
       )}
       {images && images.length > 0 && (
-        <div className="mt-4 grid grid-cols-1 gap-2 px-5 relative">
-          {images.map((src, i) => (
-            <div key={i} className="relative overflow-hidden rounded-3xl" onClick={() => setIsBlurred(false)}>
-              <img 
-                src={src} 
-                alt={`imagem-${i}`} 
-                loading="lazy"
-                decoding="async"
-                className={`max-h-[520px] w-full object-cover shadow-lg shadow-slate-950/10 ring-1 ring-white/50 transition-all duration-500 will-change-transform ${isBlurred ? 'blur-2xl scale-110 cursor-pointer' : 'blur-0 scale-100'}`} 
-              />
-              {isBlurred && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm cursor-pointer">
-                  <div className="bg-white/90 px-4 py-2 rounded-full text-xs font-bold text-slate-900 shadow-xl">Toque para ver</div>
+        <div className="mt-4 relative select-none">
+          {/* Container do carrossel */}
+          <div
+            className="relative overflow-hidden"
+            onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+            onTouchEnd={e => {
+              if (touchStartX.current === null) return
+              const diff = touchStartX.current - e.changedTouches[0].clientX
+              if (Math.abs(diff) > 40) {
+                if (diff > 0) setCurrentSlide(s => Math.min(s + 1, images.length - 1))
+                else setCurrentSlide(s => Math.max(s - 1, 0))
+              }
+              touchStartX.current = null
+            }}
+          >
+            {/* Faixa de slides */}
+            <div
+              className="flex transition-transform duration-300 ease-out"
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            >
+              {images.map((src, i) => (
+                <div key={i} className="w-full flex-shrink-0 relative" onClick={() => isBlurred && setIsBlurred(false)}>
+                  <img
+                    src={src}
+                    alt={`foto-${i + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className={`w-full max-h-[520px] object-cover transition-all duration-500 ${
+                      isBlurred ? 'blur-2xl scale-110 cursor-pointer' : 'blur-0 scale-100'
+                    }`}
+                  />
+                  {isBlurred && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm cursor-pointer">
+                      <div className="bg-white/90 px-4 py-2 rounded-full text-xs font-bold text-slate-900 shadow-xl">Toque para ver</div>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
+
+            {/* Seta esquerda */}
+            {images.length > 1 && currentSlide > 0 && (
+              <button
+                type="button"
+                onClick={() => setCurrentSlide(s => s - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm transition hover:bg-black/60 active:scale-90"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+            )}
+
+            {/* Seta direita */}
+            {images.length > 1 && currentSlide < images.length - 1 && (
+              <button
+                type="button"
+                onClick={() => setCurrentSlide(s => s + 1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm transition hover:bg-black/60 active:scale-90"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            )}
+
+            {/* Contador top-right estilo Instagram */}
+            {images.length > 1 && (
+              <div className="absolute top-2.5 right-3 bg-black/50 text-white text-[10px] font-black px-2.5 py-1 rounded-full backdrop-blur-sm">
+                {currentSlide + 1}/{images.length}
+              </div>
+            )}
+          </div>
+
+          {/* Dots de navegação */}
+          {images.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-3">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setCurrentSlide(i)}
+                  className={`rounded-full transition-all duration-200 ${
+                    i === currentSlide
+                      ? 'w-4 h-1.5 bg-indigo-500'
+                      : 'w-1.5 h-1.5 bg-slate-300 dark:bg-white/20 hover:bg-slate-400'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
       <footer className="mt-5 border-t px-5 py-3" style={{ borderColor: 'color-mix(in srgb, var(--ou-accent-soft, rgba(99,102,241,0.14)) 50%, rgba(255,255,255,0.72))' }}>
