@@ -9,11 +9,13 @@ export default function AppLock({ children }) {
   const [error, setError] = useState(false)
   const [authStatus, setAuthStatus] = useState('')
   const [isMounted, setIsMounted] = useState(false)
+  // Controla se a biometria falhou por incompatibilidade de dispositivo
+  const [biometricUnavailable, setBiometricUnavailable] = useState(false)
 
   const settings = useMemo(() => profile?.settings || {}, [profile])
   const pinEnabled = settings.pinEnabled && !!settings.pinCode
   const correctPin = settings.pinCode
-  // Biometria só é válida se tiver uma credencial cadastrada — sem ela, ignora o flag
+  // Biometria só é válida se tiver credencial cadastrada
   const biometricCredentialId = settings.biometricCredentialId
   const biometricsEnabled = settings.biometricsEnabled && !!biometricCredentialId
 
@@ -31,9 +33,20 @@ export default function AppLock({ children }) {
     }
   }, [loading, isSecurityActive])
 
+  const unlock = useCallback(() => {
+    setIsLocked(false)
+    sessionStorage.setItem('app_unlocked', 'true')
+    setPin('')
+    setAuthStatus('')
+  }, [])
+
   const handleBiometricAuth = useCallback(async (e) => {
     if (e) e.preventDefault()
-    if (!biometricsEnabled || !window.PublicKeyCredential) return
+    if (!biometricsEnabled || !window.PublicKeyCredential) {
+      // Dispositivo não suporta WebAuthn — libera se não há PIN
+      if (!pinEnabled) unlock()
+      return
+    }
 
     try {
       setAuthStatus('Verificando biometria...')
@@ -43,51 +56,66 @@ export default function AppLock({ children }) {
       const options = {
         publicKey: {
           challenge,
-          timeout: 60000,
-          userVerification: "required",
+          timeout: 30000,
+          userVerification: 'required',
         }
       }
 
       if (biometricCredentialId) {
         try {
-          const rawId = Uint8Array.from(atob(biometricCredentialId.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
+          const rawId = Uint8Array.from(
+            atob(biometricCredentialId.replace(/-/g, '+').replace(/_/g, '/')),
+            c => c.charCodeAt(0)
+          )
           options.publicKey.allowCredentials = [{ id: rawId, type: 'public-key' }]
-        } catch (e) {}
+        } catch (_) {}
       }
 
       const assertion = await navigator.credentials.get(options)
       if (assertion) {
-        setAuthStatus('Acesso liberado!')
+        setAuthStatus('Acesso liberado! ✓')
         unlock()
       }
     } catch (err) {
       console.log('Erro biometria:', err)
-      setAuthStatus('Clique no escudo para tentar novamente')
+
+      // NotAllowedError ou NotSupportedError = biometria não disponível NESTE dispositivo
+      const isDeviceError =
+        err.name === 'NotAllowedError' ||
+        err.name === 'NotSupportedError' ||
+        err.name === 'SecurityError'
+
+      if (isDeviceError) {
+        setBiometricUnavailable(true)
+        if (!pinEnabled) {
+          // Sem PIN e biometria incompatível — não há como verificar, libera o acesso
+          setAuthStatus('Biometria indisponível neste dispositivo. Acesso liberado.')
+          setTimeout(() => unlock(), 1500)
+        } else {
+          // Tem PIN — mostra o teclado como fallback
+          setAuthStatus('Biometria indisponível. Use o PIN.')
+        }
+      } else {
+        setAuthStatus('Clique no escudo para tentar novamente')
+      }
     }
-  }, [biometricsEnabled, biometricCredentialId])
+  }, [biometricsEnabled, biometricCredentialId, pinEnabled, unlock])
 
   // Tenta biometria automática após carregar
   useEffect(() => {
-    if (isLocked && biometricsEnabled && isMounted) {
+    if (isLocked && biometricsEnabled && isMounted && !biometricUnavailable) {
       const timer = setTimeout(() => {
         handleBiometricAuth().catch(() => {})
       }, 800)
       return () => clearTimeout(timer)
     }
-  }, [isLocked, biometricsEnabled, isMounted, handleBiometricAuth])
-
-  const unlock = () => {
-    setIsLocked(false)
-    sessionStorage.setItem('app_unlocked', 'true')
-    setPin('')
-    setAuthStatus('')
-  }
+  }, [isLocked, biometricsEnabled, isMounted, biometricUnavailable, handleBiometricAuth])
 
   const handleKeyPress = (num) => {
     if (!pinEnabled || error) return
     const nextPin = (pin + num).slice(0, 4)
     setPin(nextPin)
-    
+
     if (nextPin.length === 4) {
       if (nextPin === correctPin) {
         unlock()
@@ -101,13 +129,24 @@ export default function AppLock({ children }) {
     }
   }
 
+  const handleSignOut = () => {
+    import('../src/firebase/firebaseClient').then(m => {
+      import('firebase/auth').then(a => {
+        a.signOut(m.auth)
+      })
+    })
+  }
+
   if (!isMounted) return null
+
+  // Mostra PIN quando: PIN habilitado OU biometria falhou em dispositivo incompatível com PIN ativo
+  const showPinPad = pinEnabled || (biometricUnavailable && pinEnabled)
 
   return (
     <>
       <AnimatePresence mode="wait">
         {isLocked ? (
-          <motion.div 
+          <motion.div
             key="lock-screen"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -115,14 +154,14 @@ export default function AppLock({ children }) {
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950 overflow-hidden touch-none"
           >
             {settings.vaultPhoto && (
-              <div 
+              <div
                 className="absolute inset-0 z-0 opacity-30 blur-md bg-cover bg-center"
                 style={{ backgroundImage: `url(${settings.vaultPhoto})` }}
               />
             )}
 
             <div className="relative z-10 w-full max-w-[320px] px-6 text-center">
-              <motion.button 
+              <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={handleBiometricAuth}
                 animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
@@ -134,20 +173,20 @@ export default function AppLock({ children }) {
               </motion.button>
 
               <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Cofre OnlyUs</h2>
-              <p className="text-slate-400 text-sm mb-10 font-medium">
-                {authStatus || (biometricsEnabled ? 'Identidade Necessária' : 'Digite seu PIN')}
+              <p className="text-slate-400 text-sm mb-8 font-medium">
+                {authStatus || (biometricsEnabled && !biometricUnavailable ? 'Identidade Necessária' : 'Digite seu PIN')}
               </p>
 
-              {/* Só mostra os pontos e o teclado se o PIN estiver habilitado */}
-              {pinEnabled && (
+              {/* Teclado PIN */}
+              {showPinPad && (
                 <>
-                  <div className="flex justify-center gap-4 mb-12">
+                  <div className="flex justify-center gap-4 mb-10">
                     {[0, 1, 2, 3].map((i) => (
-                      <div 
+                      <div
                         key={i}
                         className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-150 ${
-                          pin.length > i 
-                            ? 'bg-white border-white scale-110 shadow-[0_0_12px_rgba(255,255,255,0.4)]' 
+                          pin.length > i
+                            ? 'bg-white border-white scale-110 shadow-[0_0_12px_rgba(255,255,255,0.4)]'
                             : 'border-white/20'
                         } ${error ? 'border-rose-500 bg-rose-500' : ''}`}
                       />
@@ -165,7 +204,7 @@ export default function AppLock({ children }) {
                         {num}
                       </button>
                     ))}
-                    
+
                     <div className="w-16" />
 
                     <button
@@ -192,19 +231,27 @@ export default function AppLock({ children }) {
                 </>
               )}
 
-              {/* Se apenas biometria estiver ativa, mostra um botão de tentativa manual maior se o auto falhar */}
-              {!pinEnabled && biometricsEnabled && (
-                <button 
+              {/* Botão de tentar biometria novamente (só quando biometria está ativa e não deu erro de device) */}
+              {!showPinPad && biometricsEnabled && !biometricUnavailable && (
+                <button
                   onClick={handleBiometricAuth}
                   className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-sm font-semibold transition-all active:scale-95 border border-white/10"
                 >
                   Tentar Biometria de Novo
                 </button>
               )}
+
+              {/* Botão de sair — sempre visível como saída de emergência */}
+              <button
+                onClick={handleSignOut}
+                className="mt-10 text-slate-500 hover:text-rose-400 text-xs font-semibold uppercase tracking-widest transition-colors"
+              >
+                Sair da conta
+              </button>
             </div>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             key="app-content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
