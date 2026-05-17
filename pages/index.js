@@ -193,13 +193,13 @@ export default function Home() {
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">Seu Humor</p>
                             <div className="flex items-center gap-2 relative">
-                              <button 
+                              <button
                                 onClick={() => setShowMoodSelector(!showMoodSelector)}
-                                className="text-3xl drop-shadow-md hover:scale-110 transition-transform active:scale-95"
+                                className="flex items-center gap-2 hover:opacity-80 active:scale-95 transition-all"
                               >
-                                {coupleData.myMood}
+                                <span className="text-3xl drop-shadow-md">{coupleData.myMood}</span>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase underline underline-offset-2 decoration-dotted">Alterar</span>
                               </button>
-                              <span className="text-[10px] text-slate-400 font-bold uppercase">Alterar</span>
 
                               {showMoodSelector && (
                                 <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 w-56 animate-in fade-in zoom-in duration-200">
