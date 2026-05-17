@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // USERS: cada usuário lê/escreve apenas o próprio perfil
+    // ============================================================
+    match /users/{userId} {
+      // Leitura: apenas o próprio dono
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Criação: usuário autenticado criando o próprio perfil (primeiro acesso)
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Atualização: apenas o próprio dono
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Exclusão: apenas o próprio dono
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================================
+    // COUPLES: os dois parceiros podem ler e escrever na sala
+    // ============================================================
+    match /couples/{coupleId} {
+      // Verifica se o usuário é um dos parceiros da sala
+      function isPartner() {
+        let data = get(/databases/$(database)/documents/couples/$(coupleId)).data;
+        return request.auth != null &&
+          (request.auth.uid == data.partnerA || request.auth.uid == data.partnerB);
+      }
+
+      // Leitura: qualquer usuário autenticado pode ler (necessário para vincular parceiro)
+      allow read: if request.auth != null;
+
+      // Criação: qualquer usuário autenticado pode criar nova sala de casal
+      allow create: if request.auth != null;
+
+      // Atualização e exclusão: apenas os parceiros da sala
+      allow update, delete: if isPartner();
+
+      // ============================================================
+      // SUBCOLEÇÕES da sala do casal (posts, notifications, etc.)
+      // ============================================================
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth != null && isPartner();
+      }
+    }
+  }
+}
