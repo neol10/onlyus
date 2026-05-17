@@ -294,7 +294,6 @@ export default function Home() {
           </main>
         </>
       )}
-    </div>
       {/* Bottom Sheet — Seletor de Humor (fora do card para evitar overflow) */}
       <AnimatePresence>
         {showMoodSelector && (
@@ -383,5 +382,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
   )
 }
