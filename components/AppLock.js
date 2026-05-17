@@ -11,10 +11,11 @@ export default function AppLock({ children }) {
   const [isMounted, setIsMounted] = useState(false)
 
   const settings = useMemo(() => profile?.settings || {}, [profile])
-  const pinEnabled = settings.pinEnabled
+  const pinEnabled = settings.pinEnabled && !!settings.pinCode
   const correctPin = settings.pinCode
-  const biometricsEnabled = settings.biometricsEnabled
+  // Biometria só é válida se tiver uma credencial cadastrada — sem ela, ignora o flag
   const biometricCredentialId = settings.biometricCredentialId
+  const biometricsEnabled = settings.biometricsEnabled && !!biometricCredentialId
 
   const isSecurityActive = useMemo(() => pinEnabled || biometricsEnabled, [pinEnabled, biometricsEnabled])
 
