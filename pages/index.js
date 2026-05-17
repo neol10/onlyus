@@ -192,7 +192,7 @@ export default function Home() {
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-300 mb-2">Seu Humor</p>
-                            <div className="flex items-center gap-2 relative">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setShowMoodSelector(!showMoodSelector)}
                                 className="flex items-center gap-2 hover:opacity-80 active:scale-95 transition-all"
@@ -200,73 +200,6 @@ export default function Home() {
                                 <span className="text-3xl drop-shadow-md">{coupleData.myMood}</span>
                                 <span className="text-[10px] text-slate-400 font-bold uppercase underline underline-offset-2 decoration-dotted">Alterar</span>
                               </button>
-
-                              {showMoodSelector && (
-                                <div className="absolute top-10 left-0 z-50 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-3 border border-slate-200 dark:border-white/10 w-56 animate-in fade-in zoom-in duration-200">
-                                  {/* Presets rápidos */}
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Rápidos</p>
-                                  <div className="grid grid-cols-5 gap-1 mb-3">
-                                    {MOOD_OPTIONS.map(emoji => (
-                                      <button
-                                        key={emoji}
-                                        onClick={() => {
-                                          saveCoupleData({ myMood: emoji })
-                                          setShowMoodSelector(false)
-                                        }}
-                                        className="text-2xl hover:bg-slate-100 dark:hover:bg-white/5 p-1 rounded-lg transition-colors"
-                                      >
-                                        {emoji}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  {/* Campo livre — abre teclado de emoji no celular */}
-                                  <div className="border-t border-slate-100 dark:border-white/10 pt-2">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Qualquer emoji</p>
-                                    <div className="flex gap-2 items-center">
-                                      <input
-                                        type="text"
-                                        placeholder="😊"
-                                        maxLength={8}
-                                        className="flex-1 text-center text-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-400"
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter') {
-                                            const val = [...e.target.value.trim()]
-                                            if (val.length > 0) {
-                                              saveCoupleData({ myMood: val[0] })
-                                              setShowMoodSelector(false)
-                                            }
-                                          }
-                                        }}
-                                        onChange={e => {
-                                          // Auto-salva assim que detectar um emoji (>1 char por codepoint)
-                                          const raw = e.target.value
-                                          const chars = [...raw]
-                                          // Emojis são geralmente ≥2 codepoints ou >1 char
-                                          if (chars.length >= 1 && raw !== chars[0]) {
-                                            saveCoupleData({ myMood: chars[0] })
-                                            setShowMoodSelector(false)
-                                          }
-                                        }}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={e => {
-                                          const input = e.currentTarget.previousSibling
-                                          const val = [...input.value.trim()]
-                                          if (val.length > 0) {
-                                            saveCoupleData({ myMood: val[0] })
-                                            setShowMoodSelector(false)
-                                          }
-                                        }}
-                                        className="px-3 py-2 bg-indigo-500 text-white text-xs font-bold rounded-xl hover:bg-indigo-600 transition active:scale-95"
-                                      >
-                                        Usar
-                                      </button>
-                                    </div>
-                                    <p className="text-[9px] text-slate-400 mt-1 text-center">Digite e pressione Usar ou Enter</p>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           </div>
                           <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
@@ -340,5 +273,93 @@ export default function Home() {
         </>
       )}
     </div>
+      {/* Bottom Sheet — Seletor de Humor (fora do card para evitar overflow) */}
+      <AnimatePresence>
+        {showMoodSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9998] flex items-end justify-center"
+            onClick={() => setShowMoodSelector(false)}
+          >
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-6 pb-10 shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Handle */}
+              <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-5" />
+
+              <p className="text-sm font-black text-slate-900 dark:text-white text-center mb-4">Como você está se sentindo?</p>
+
+              {/* Presets */}
+              <div className="grid grid-cols-5 gap-2 mb-5">
+                {MOOD_OPTIONS.map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      saveCoupleData({ myMood: emoji })
+                      setShowMoodSelector(false)
+                    }}
+                    className="text-3xl flex items-center justify-center h-12 w-12 mx-auto rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 active:scale-90 transition-all"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
+              {/* Campo livre com autoFocus — abre teclado no celular */}
+              <div className="border-t border-slate-100 dark:border-white/10 pt-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 text-center">Ou digite qualquer emoji</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="🥰"
+                    className="flex-1 text-center text-3xl bg-slate-50 dark:bg-white/5 border-2 border-indigo-300 dark:border-indigo-500/40 rounded-2xl py-3 outline-none focus:border-indigo-500"
+                    onChange={e => {
+                      const chars = [...e.target.value.trim()]
+                      if (chars.length >= 1) {
+                        saveCoupleData({ myMood: chars[0] })
+                        setShowMoodSelector(false)
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const chars = [...e.target.value.trim()]
+                        if (chars.length >= 1) {
+                          saveCoupleData({ myMood: chars[0] })
+                          setShowMoodSelector(false)
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={e => {
+                      const input = e.currentTarget.previousSibling
+                      const chars = [...input.value.trim()]
+                      if (chars.length >= 1) {
+                        saveCoupleData({ myMood: chars[0] })
+                        setShowMoodSelector(false)
+                      }
+                    }}
+                    className="px-5 py-3 bg-indigo-500 text-white font-bold rounded-2xl hover:bg-indigo-600 active:scale-95 transition-all"
+                  >
+                    Usar
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 text-center mt-2">No celular: troque para o teclado de emoji 😊</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
   )
 }
