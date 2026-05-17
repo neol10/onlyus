@@ -41,10 +41,11 @@ export function AuthProvider({ children }) {
     }
 
     let unsubProfile = null
+    let unsubCouple = null
 
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u)
-      
+
       if (typeof window !== 'undefined') {
         if (u?.uid) {
           window.localStorage.setItem('onlyus-active-user-id', u.uid)
@@ -60,13 +61,16 @@ export function AuthProvider({ children }) {
           if (docSnap.exists()) {
             const data = docSnap.data()
             setProfile(data)
-            
-            // Escuta as configurações da sala do casal (Global)
-            // IMPORTANTE: configurações de segurança (PIN, biometria) são INDIVIDUAIS
+
+            // Escuta as configurações da sala do casal (apenas temas visuais)
+            // IMPORTANTE: configs de segurança (PIN, biometria) são INDIVIDUAIS
             // e nunca devem ser sincronizadas do casal para o usuário.
             if (data.coupleId) {
+              // Cancela listener anterior antes de criar um novo
+              if (unsubCouple) unsubCouple()
+
               const coupleRef = doc(db, 'couples', data.coupleId)
-              onSnapshot(coupleRef, (coupleSnap) => {
+              unsubCouple = onSnapshot(coupleRef, (coupleSnap) => {
                 if (coupleSnap.exists()) {
                   const coupleData = coupleSnap.data()
                   if (coupleData.settings && typeof window !== 'undefined') {
@@ -87,8 +91,11 @@ export function AuthProvider({ children }) {
                   }
                 }
               })
+            } else {
+              // Sem casal — cancela listener do couple se existir
+              if (unsubCouple) { unsubCouple(); unsubCouple = null }
             }
-            
+
             setLoading(false)
           } else {
             const newProfile = {
@@ -113,12 +120,14 @@ export function AuthProvider({ children }) {
         setProfile(null)
         setLoading(false)
         if (unsubProfile) unsubProfile()
+        if (unsubCouple) unsubCouple()
       }
     })
 
     return () => {
       unsubscribe()
       if (unsubProfile) unsubProfile()
+      if (unsubCouple) unsubCouple()
     }
   }, [])
 

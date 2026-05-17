@@ -139,8 +139,8 @@ export default function AppLock({ children }) {
 
   if (!isMounted) return null
 
-  // Mostra PIN quando: PIN habilitado OU biometria falhou em dispositivo incompatível com PIN ativo
-  const showPinPad = pinEnabled || (biometricUnavailable && pinEnabled)
+  // Mostra PIN quando: PIN está habilitado (independente da biometria)
+  const showPinPad = pinEnabled
 
   return (
     <>
@@ -162,10 +162,10 @@ export default function AppLock({ children }) {
 
             <div className="relative z-10 w-full max-w-[320px] px-6 text-center">
               <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={handleBiometricAuth}
+                whileTap={biometricsEnabled ? { scale: 0.95 } : {}}
+                onClick={biometricsEnabled ? handleBiometricAuth : undefined}
                 animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
-                className="w-24 h-24 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl mx-auto cursor-pointer"
+                className={`w-24 h-24 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl mx-auto ${biometricsEnabled ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 3c1.258 0 2.453.232 3.555.656m3.43 2.051A10.003 10.003 0 0121 12c0 1.258-.232 2.453-.656 3.555" />
@@ -174,7 +174,13 @@ export default function AppLock({ children }) {
 
               <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Cofre OnlyUs</h2>
               <p className="text-slate-400 text-sm mb-8 font-medium">
-                {authStatus || (biometricsEnabled && !biometricUnavailable ? 'Identidade Necessária' : 'Digite seu PIN')}
+                {authStatus || (
+                  biometricsEnabled && !biometricUnavailable
+                    ? 'Identidade Necessária'
+                    : pinEnabled
+                      ? 'Digite seu PIN'
+                      : 'Verificando...'
+                )}
               </p>
 
               {/* Teclado PIN */}
