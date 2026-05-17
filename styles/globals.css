@@ -248,4 +248,29 @@
   [data-ui-mode='Escuro'] .secondary-button {
     background: linear-gradient(145deg, color-mix(in srgb, var(--ou-card-bg, rgba(15,23,42,0.9)) 92%, rgba(2,6,23,0.82)), rgba(15, 23, 42, 0.68));
   }
+
+  /* Efeito de tremor (Shake) premium para o Cutucão (Poke) */
+  .screen-shake {
+    animation: screen-shake-anim 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    transform: translate3d(0, 0, 0);
+  }
+
+  @keyframes screen-shake-anim {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+
+  /* Animação de brilho estelar (Stellar Sparkle) para o Love Shake */
+  @keyframes stellar-shine {
+    0% { transform: scale(0.8) rotate(0deg); opacity: 0; }
+    50% { transform: scale(1.1) rotate(180deg); opacity: 1; }
+    100% { transform: scale(1) rotate(360deg); opacity: 0; }
+  }
+
+  .stellar-sparkle {
+    animation: stellar-shine 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
+

@@ -6,6 +6,8 @@ import NewEventForm from '../components/NewEventForm'
 import EventCard from '../components/EventCard'
 import NewPostForm from '../components/NewPostForm'
 import PostCard from '../components/PostCard'
+import DreamList from '../components/DreamList'
+import LoveCapsuleList from '../components/LoveCapsuleList'
 import { useAuth } from '../src/context/AuthContext'
 import { db } from '../src/firebase/firebaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -15,7 +17,7 @@ export default function TimelinePage() {
   const router = useRouter()
   const [events, setEvents] = useState([])
   const [posts, setPosts] = useState([])
-  const [activeView, setActiveView] = useState('posts') // 'posts' ou 'events'
+  const [activeView, setActiveView] = useState('posts') // 'posts', 'events', 'dreams', 'capsules'
 
   useEffect(() => {
     if (!loading && !user) {
@@ -81,78 +83,107 @@ export default function TimelinePage() {
           </div>
         </section>
 
-        {/* Seletor de Visualização */}
+        {/* Seletor de Visualização com suporte a scroll horizontal fluido no celular */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl flex gap-1 w-full max-w-md">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl flex gap-1 w-full max-w-lg overflow-x-auto scrollbar-none">
             <button 
               onClick={() => setActiveView('posts')}
-              className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeView === 'posts' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+              className={`flex-1 min-w-[92px] py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeView === 'posts' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
             >
               Memórias 📸
             </button>
             <button 
               onClick={() => setActiveView('events')}
-              className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeView === 'events' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+              className={`flex-1 min-w-[92px] py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeView === 'events' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
             >
               Marcos 🏆
+            </button>
+            <button 
+              onClick={() => setActiveView('dreams')}
+              className={`flex-1 min-w-[92px] py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeView === 'dreams' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+            >
+              Sonhos 🗺️
+            </button>
+            <button 
+              onClick={() => setActiveView('capsules')}
+              className={`flex-1 min-w-[92px] py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeView === 'capsules' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+            >
+              Cápsulas ⏳
             </button>
           </div>
         </div>
 
-        <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
-          <div className="space-y-6">
+        {/* Conteúdo dinâmico das abas */}
+        {activeView === 'dreams' || activeView === 'capsules' ? (
+          <div className="max-w-4xl mx-auto w-full">
             <AnimatePresence mode="wait">
-              {activeView === 'posts' ? (
-                <motion.div key="form-posts" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                  <NewPostForm />
+              {activeView === 'dreams' ? (
+                <motion.div key="dreams-view" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.25 }}>
+                  <DreamList />
                 </motion.div>
               ) : (
-                <motion.div key="form-events" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                  <NewEventForm />
+                <motion.div key="capsules-view" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.25 }}>
+                  <LoveCapsuleList />
                 </motion.div>
               )}
             </AnimatePresence>
-            
-            <div className="soft-card p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Dica</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                {activeView === 'posts' 
-                  ? "As memórias são fotos do dia a dia. Você pode trancar fotos sensíveis com PIN." 
-                  : "Os marcos são datas especiais como aniversário de namoro, primeira viagem, etc."}
-              </p>
-            </div>
           </div>
+        ) : (
+          <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
+            <div className="space-y-6">
+              <AnimatePresence mode="wait">
+                {activeView === 'posts' ? (
+                  <motion.div key="form-posts" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                    <NewPostForm />
+                  </motion.div>
+                ) : (
+                  <motion.div key="form-events" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                    <NewEventForm />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <div className="soft-card p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Dica</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  {activeView === 'posts' 
+                    ? "As memórias são fotos do dia a dia. Você pode trancar fotos sensíveis com PIN." 
+                    : "Os marcos são datas especiais como aniversário de namoro, primeira viagem, etc."}
+                </p>
+              </div>
+            </div>
 
-          <section className="space-y-4">
-            <AnimatePresence mode="wait">
-              {activeView === 'posts' ? (
-                <motion.div key="list-posts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                  {posts.length === 0 && (
-                    <div className="soft-card p-8 text-center">
-                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Sem memórias</p>
-                      <p className="mt-3 text-lg font-medium text-slate-900 dark:text-white">Nenhuma foto registrada ainda.</p>
-                    </div>
-                  )}
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </motion.div>
-              ) : (
-                <motion.div key="list-events" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                  {events.length === 0 && (
-                    <div className="soft-card p-8 text-center">
-                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Sem marcos</p>
-                      <p className="mt-3 text-lg font-medium text-slate-900 dark:text-white">Nenhum marco registrado ainda.</p>
-                    </div>
-                  )}
-                  {events.map((event) => (
-                    <EventCard key={event.id} event={event} coupleId={profile?.coupleId} />
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <section className="space-y-4">
+              <AnimatePresence mode="wait">
+                {activeView === 'posts' ? (
+                  <motion.div key="list-posts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {posts.length === 0 && (
+                      <div className="soft-card p-8 text-center">
+                        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Sem memórias</p>
+                        <p className="mt-3 text-lg font-medium text-slate-900 dark:text-white">Nenhuma foto registrada ainda.</p>
+                      </div>
+                    )}
+                    {posts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div key="list-events" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {events.length === 0 && (
+                      <div className="soft-card p-8 text-center">
+                        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Sem marcos</p>
+                        <p className="mt-3 text-lg font-medium text-slate-900 dark:text-white">Nenhum marco registrado ainda.</p>
+                      </div>
+                    )}
+                    {events.map((event) => (
+                      <EventCard key={event.id} event={event} coupleId={profile?.coupleId} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </section>
           </section>
-        </section>
+        )}
       </main>
     </div>
   )

@@ -14,6 +14,7 @@ import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc } from '
 import { db } from '../src/firebase/firebaseClient'
 import MusicCard from '../components/MusicCard'
 import LocationCard from '../components/LocationCard'
+import LoveNotes from '../components/LoveNotes'
 import { useToast } from '../src/context/ToastContext'
 
 export default function Home() {
@@ -224,9 +225,10 @@ export default function Home() {
 
                   {/* Grid Principal Inferior: Throwback e Últimas Memórias */}
                   <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] xl:grid-cols-[0.7fr_1.3fr] items-start">
-                    {/* Lado Esquerdo: Lembrança Antiga (Throwback) */}
-                    <div className="w-full">
+                    {/* Lado Esquerdo: Lembrança Antiga (Throwback) e Cartinhas do Dia */}
+                    <div className="w-full space-y-4">
                       <ThrowbackCard posts={posts} />
+                      <LoveNotes />
                     </div>
 
                     {/* Lado Direito: Lembranças Recentes Reais (substitui o card estático 'Resumo do Dia') */}
